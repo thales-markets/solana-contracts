@@ -1,9 +1,9 @@
 use anchor_lang::prelude::*;
 
-declare_id!("Fg6PaFpoGXkYsidMpWTK6W2BeZ7FEfcYkg476zPFsLnS");
+declare_id!("EfscCNT9ERcPjNatjatcJRsuWLjqo5jSngbbS4Yim1i");
 
 #[program]
-mod mysolanaapp {
+mod speed_markets {
     use super::*;
 
     pub fn create(ctx: Context<Create>) -> Result<()> {
@@ -14,7 +14,7 @@ mod mysolanaapp {
 
     pub fn increment(ctx: Context<Increment>) -> Result<()> {
         let base_account = &mut ctx.accounts.base_account;
-        base_account.count += 1;
+        base_account.count += 2;
         Ok(())
     }
 }
