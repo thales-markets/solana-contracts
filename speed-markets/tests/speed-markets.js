@@ -41,6 +41,15 @@ describe("speed-markets", () => {
     const account = await program.account.baseAccount.fetch(baseAccount.publicKey);
     console.log('Count 1: ', account.count.toString())
     assert.ok(account.count.toString() == 2);
+
+    await program.rpc.decrement({
+      accounts: {
+        baseAccount: baseAccount.publicKey,
+      },
+    });
+    const account2 = await program.account.baseAccount.fetch(baseAccount.publicKey);
+    console.log('Count 2: ', account2.count.toString())
+    assert.ok(account2.count.toString() == 1);
   });
 
   // it("Is initialized!", async () => {

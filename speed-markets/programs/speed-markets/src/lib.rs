@@ -17,6 +17,12 @@ mod speed_markets {
         base_account.count += 2;
         Ok(())
     }
+
+    pub fn decrement(ctx: Context<Increment>) -> Result<()> {
+        let base_account = &mut ctx.accounts.base_account;
+        base_account.count -= 1;
+        Ok(())
+    }
 }
 
 // Transaction instructions
