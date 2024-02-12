@@ -22,8 +22,10 @@ mod speed_markets {
     pub fn create_speed_market(ctx: Context<CreateSpeedMarket>, bump: u8, strike_time: u64, direction: u8) -> Result<()> {
         let bump = &[bump][..];
         let mut current_timestamp = Clock::get()?.unix_timestamp;
-        require!(strike_time > wrap_to_u64(current_timestamp, Errors::StrikeTimeInThePast);
-        
+        require!(strike_time > wrap_to_u64(current_timestamp), Errors::StrikeTimeInThePast);
+        require!(direction <= 1 , Errors::DirectionError);
+        require!(strike_time >= ctx.accounts.market_requirements.min_strike_timestamp && strike_time <= ctx.accounts.market_requirements.max_strike_timestamp, Errors::StrikeTimeInThePast);
+        // require!(strike_time <= max_strike, Errors::StrikeTimeInThePast);
         Ok(())
     }
     pub fn create(ctx: Context<Create>) -> Result<()> {
@@ -56,7 +58,9 @@ mod speed_markets {
 #[error_code]
 pub enum Errors {
     #[msg("Strike time lower than current time")]
-    StrikeTimeInThePast
+    StrikeTimeInThePast,
+    #[msg("Wrong direction. Up/Down only")]
+    DirectionError
 }
 
 #[derive(Accounts)]
@@ -71,6 +75,7 @@ pub struct Initialize<'info> {
 #[derive(Accounts)]
 pub struct CreateSpeedMarket<'info> {
     #[account(mut)]
+    pub market_requirements: Account<'info, SpeedMarketRequirements>,
     /// CHECK: only used as a signing PDA
     pub authority: UncheckedAccount<'info>,
 }
@@ -108,4 +113,9 @@ pub struct SecondBaseAccount {
 #[account]
 pub struct BaseAccount {
     pub count: u64,
+}
+#[account]
+pub struct SpeedMarketRequirements {
+    pub min_strike_timestamp: u64,
+    pub max_strike_timestamp: u64,
 }
