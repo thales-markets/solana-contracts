@@ -2,6 +2,10 @@ use anchor_lang::prelude::*;
 
 declare_id!("EfscCNT9ERcPjNatjatcJRsuWLjqo5jSngbbS4Yim1i");
 
+pub fn wrap_to_u64(x: i64) -> u64 {
+    (x as u64).wrapping_add(u64::MAX/2 + 1)
+}
+
 #[program]
 mod speed_markets {
     use super::*;
@@ -14,6 +18,14 @@ mod speed_markets {
         Ok(())
     }
 
+    // pub fn create_speed_market(ctx: Context<CreateSpeedMarket>, bump: u8, asset: str, strikeTime: u64, direction: u8, buyInAmount: u64, skewImpact: u64) -> Result<()> {
+    pub fn create_speed_market(ctx: Context<CreateSpeedMarket>, bump: u8, strike_time: u64, direction: u8) -> Result<()> {
+        let bump = &[bump][..];
+        let mut current_timestamp = Clock::get()?.unix_timestamp;
+        require!(strike_time > wrap_to_u64(current_timestamp, Errors::StrikeTimeInThePast);
+        
+        Ok(())
+    }
     pub fn create(ctx: Context<Create>) -> Result<()> {
         let base_account = &mut ctx.accounts.base_account;
         base_account.count = 0;
@@ -41,6 +53,12 @@ mod speed_markets {
     }
 }
 
+#[error_code]
+pub enum Errors {
+    #[msg("Strike time lower than current time")]
+    StrikeTimeInThePast
+}
+
 #[derive(Accounts)]
 pub struct Initialize<'info> {
     #[account(init, payer = user, space = 64 + 64)]
@@ -48,6 +66,13 @@ pub struct Initialize<'info> {
     #[account(mut)]
     pub user: Signer<'info>,
     pub system_program: Program<'info, System>,
+}
+
+#[derive(Accounts)]
+pub struct CreateSpeedMarket<'info> {
+    #[account(mut)]
+    /// CHECK: only used as a signing PDA
+    pub authority: UncheckedAccount<'info>,
 }
 
 // Transaction instructions
