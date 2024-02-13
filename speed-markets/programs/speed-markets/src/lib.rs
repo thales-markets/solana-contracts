@@ -6,14 +6,6 @@ declare_id!("EfscCNT9ERcPjNatjatcJRsuWLjqo5jSngbbS4Yim1i");
 mod speed_markets {
     use super::*;
 
-    pub fn initialize(ctx: Context<Initialize>, data: String) -> Result<()> {
-        let second_base_account = &mut ctx.accounts.second_base_account;
-        let copy = data.clone();
-        second_base_account.data = data;
-        second_base_account.data_list.push(copy);
-        Ok(())
-    }
-
     pub fn initialize_market_requirements(ctx: Context<InitializeSpeedMarketRequirements>, min_strike: u64, max_strike: u64, min_amount: u64, max_amount: u64) -> Result<()> {
         let market_requirements = &mut ctx.accounts.market_requirements;
         market_requirements.min_strike_timestamp = min_strike;
@@ -34,31 +26,7 @@ mod speed_markets {
         // require!(strike_time <= max_strike, Errors::StrikeTimeInThePast);
         Ok(())
     }
-    pub fn create(ctx: Context<Create>) -> Result<()> {
-        let base_account = &mut ctx.accounts.base_account;
-        base_account.count = 0;
-        Ok(())
-    }
-
-    pub fn increment(ctx: Context<Increment>) -> Result<()> {
-        let base_account = &mut ctx.accounts.base_account;
-        base_account.count += 2;
-        Ok(())
-    }
-
-    pub fn decrement(ctx: Context<Increment>) -> Result<()> {
-        let base_account = &mut ctx.accounts.base_account;
-        base_account.count -= 1;
-        Ok(())
-    }
-
-    pub fn update(ctx: Context<Update>, data: String) -> Result<()> {
-        let second_base_account = &mut ctx.accounts.second_base_account;
-        let copy = data.clone();
-        second_base_account.data = data;
-        second_base_account.data_list.push(copy);
-        Ok(())
-    }
+    
 }
 
 #[error_code]
@@ -69,15 +37,6 @@ pub enum Errors {
     MinMaxStrikeExceeded,
     #[msg("Wrong direction. Up/Down only")]
     DirectionError
-}
-
-#[derive(Accounts)]
-pub struct Initialize<'info> {
-    #[account(init, payer = user, space = 64 + 64)]
-    pub second_base_account: Account<'info, SecondBaseAccount>,
-    #[account(mut)]
-    pub user: Signer<'info>,
-    pub system_program: Program<'info, System>,
 }
 
 #[derive(Accounts)]
@@ -95,41 +54,6 @@ pub struct CreateSpeedMarket<'info> {
     pub market_requirements: Account<'info, SpeedMarketRequirements>,
     /// CHECK: only used as a signing PDA
     pub authority: UncheckedAccount<'info>,
-}
-
-// Transaction instructions
-#[derive(Accounts)]
-pub struct Create<'info> {
-    #[account(init, payer = user, space = 16 + 16)]
-    pub base_account: Account<'info, BaseAccount>,
-    #[account(mut)]
-    pub user: Signer<'info>,
-    pub system_program: Program <'info, System>,
-}
-
-// Transaction instructions
-#[derive(Accounts)]
-pub struct Increment<'info> {
-    #[account(mut)]
-    pub base_account: Account<'info, BaseAccount>,
-}
-
-#[derive(Accounts)]
-pub struct Update<'info> {
-    #[account(mut)]
-    pub second_base_account: Account<'info, SecondBaseAccount>,
-}
-
-#[account]
-pub struct SecondBaseAccount {
-    pub data: String,
-    pub data_list: Vec<String>,
-}
-
-// An account that goes inside a transaction instruction
-#[account]
-pub struct BaseAccount {
-    pub count: u64,
 }
 
 #[account]
