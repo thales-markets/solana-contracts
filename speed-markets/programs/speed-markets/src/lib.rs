@@ -55,12 +55,12 @@ pub struct CreateSpeedMarket<'info> {
     #[account(
         init,
         seeds = [
-            b"speedmarket".as_ref(),
+            b"speed".as_ref(),
             user.key().as_ref()
             ],
             bump,
             payer = user,
-            space = SpeedMarket::LEN
+            space = 8 + SpeedMarket::LEN
         )]
     pub speed_market: Account<'info, SpeedMarket>,
     

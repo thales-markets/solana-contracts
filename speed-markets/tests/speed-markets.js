@@ -13,9 +13,13 @@ describe("speed-markets", () => {
 
   it("Create speed markets", async () => {
     const marketRequirementsAccount = anchor.web3.Keypair.generate();
+    const speedMarketAccount = anchor.web3.Keypair.generate();
+    console.log("speed acc: ", speedMarketAccount);
+    console.log("provider acc: ", provider.wallet);
     const [speedMarketPDA, speedMarketBump] =
-      await PublicKey.findProgramAddressSync([], speedMarketsProgram.programId);
-    console.log("SpeedMarketPDA: ", speedMarketPDA);
+      await PublicKey.findProgramAddressSync([anchor.utils.bytes.utf8.encode("speed"), provider.wallet.publicKey.toBuffer()], speedMarketsProgram.programId);
+    console.log("SpeedMarketPDA: ", speedMarketPDA.toString());
+    console.log("SpeedMarketAccount: ", speedMarketAccount.publicKey.toString());
     console.log("speedMarketBump: ", speedMarketBump);
     console.log("rpc: \n", program.rpc);
     let now = parseInt(Date.now()/1000);
@@ -31,10 +35,11 @@ describe("speed-markets", () => {
       const create_tx = await program.rpc.createSpeedMarket(speedMarketBump, new anchor.BN(now+50), new anchor.BN(0), {
         accounts:{
           marketRequirements: marketRequirementsAccount.publicKey,
-          authority: speedMarketPDA,
-        },
+          user: provider.wallet.publicKey,
+          speedMarket: speedMarketPDA,
+          systemProgram: SystemProgram.programId,
+        }
       });
-  
       console.log("create tx: ", create_tx);
 
     }
