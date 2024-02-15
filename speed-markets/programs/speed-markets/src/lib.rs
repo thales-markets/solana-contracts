@@ -1,22 +1,26 @@
 use anchor_lang::prelude::*;
+use std::str::FromStr;
 
 declare_id!("EfscCNT9ERcPjNatjatcJRsuWLjqo5jSngbbS4Yim1i");
+
+const BTC_USDC_FEED: &str = "HovQMDrbAgAYPCmHVSrezcSmkMtXSSUsLDFANExrZh2J";
 
 #[program]
 mod speed_markets {
     use super::*;
 
-    pub fn initialize_market_requirements(ctx: Context<InitializeSpeedMarketRequirements>, min_strike: i64, max_strike: i64, min_amount: u64, max_amount: u64) -> Result<()> {
+    pub fn initialize_market_requirements(ctx: Context<InitializeSpeedMarketRequirements>, min_strike: i64, max_strike: i64, min_amount: u64, max_amount: u64, safe_box_impact: u64) -> Result<()> {
         let market_requirements = &mut ctx.accounts.market_requirements;
         market_requirements.min_strike_timestamp = min_strike;
         market_requirements.max_strike_timestamp = max_strike;
         market_requirements.min_amount = min_amount;
         market_requirements.max_amount = max_amount;
+        market_requirements.safe_box_impact = safe_box_impact;
         Ok(())
     }
 
     // pub fn create_speed_market(ctx: Context<CreateSpeedMarket>, bump: u8, asset: str, strikeTime: u64, direction: u8, buyInAmount: u64, skewImpact: u64) -> Result<()> {
-    pub fn create_speed_market(ctx: Context<CreateSpeedMarket>, bump: u8, strike_time: i64, direction: u8) -> Result<()> {
+    pub fn create_speed_market(ctx: Context<CreateSpeedMarket>, bump: u8, strike_time: i64, direction: u8, buy_in_amount: u64) -> Result<()> {
         let bump = &[bump][..];
         let mut current_timestamp = Clock::get()?.unix_timestamp;
         msg!("current timestamp {}", &current_timestamp);
@@ -24,6 +28,18 @@ mod speed_markets {
         require!(direction <= 1 , Errors::DirectionError);
         require!((strike_time - current_timestamp) >= ctx.accounts.market_requirements.min_strike_timestamp && (strike_time - current_timestamp) <= ctx.accounts.market_requirements.max_strike_timestamp , Errors::MinMaxStrikeExceeded);
         // require!(strike_time <= max_strike, Errors::StrikeTimeInThePast);
+        let speed_market = &mut ctx.accounts.speed_market;
+        speed_market.created_at = current_timestamp;
+        speed_market.strike_time = strike_time;
+        speed_market.strike_price = 0;
+        speed_market.direction = direction;
+        speed_market.result = 0;
+        speed_market.buy_in_amount = buy_in_amount;
+        speed_market.safe_box_impact = 5;
+        speed_market.lp_fee = 5;
+        speed_market.resolved = false;
+        // require!(speed_market.user.key() == Pubkey::from_str(BTC_USDC_FEED).unwrap() , Errors::DirectionError);
+        speed_market.user = ctx.accounts.user.key();
         Ok(())
     }
     
@@ -41,7 +57,7 @@ pub enum Errors {
 
 #[derive(Accounts)]
 pub struct InitializeSpeedMarketRequirements<'info> {
-    #[account(init, payer = user, space = 64 + 32)]
+    #[account(init, payer = user, space = 64 + 40)]
     pub market_requirements: Account<'info, SpeedMarketRequirements>,
     #[account(mut)]
     pub user: Signer<'info>,
@@ -77,6 +93,7 @@ pub struct SpeedMarketRequirements {
     pub max_strike_timestamp: i64,
     pub min_amount: u64,
     pub max_amount: u64,
+    pub safe_box_impact: u64,
 }
 
 #[account]

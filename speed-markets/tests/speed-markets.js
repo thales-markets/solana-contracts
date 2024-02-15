@@ -24,7 +24,7 @@ describe("speed-markets", () => {
     console.log("rpc: \n", program.rpc);
     let now = parseInt(Date.now()/1000);
     console.log("time: ", now);
-    await program.rpc.initializeMarketRequirements(new anchor.BN(10), new anchor.BN(100), new anchor.BN(20), new anchor.BN(200),{
+    await program.rpc.initializeMarketRequirements(new anchor.BN(10), new anchor.BN(100), new anchor.BN(20), new anchor.BN(200), new anchor.BN(2),{
       accounts:{
         marketRequirements: marketRequirementsAccount.publicKey,
         user: provider.wallet.publicKey,
@@ -32,7 +32,7 @@ describe("speed-markets", () => {
       }, signers: [marketRequirementsAccount],
     });
     try {
-      const create_tx = await program.rpc.createSpeedMarket(speedMarketBump, new anchor.BN(now+50), new anchor.BN(0), {
+      const create_tx = await program.rpc.createSpeedMarket(speedMarketBump, new anchor.BN(now+50), new anchor.BN(0), new anchor.BN(100), {
         accounts:{
           marketRequirements: marketRequirementsAccount.publicKey,
           user: provider.wallet.publicKey,
