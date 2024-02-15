@@ -13,7 +13,11 @@ describe("speed-markets", () => {
 
   it("Create speed markets", async () => {
     const marketRequirementsAccount = anchor.web3.Keypair.generate();
+    const priceFeed = anchor.web3.Keypair.generate();
     const speedMarketAccount = anchor.web3.Keypair.generate();
+    const btcFeed = new PublicKey(
+      "HovQMDrbAgAYPCmHVSrezcSmkMtXSSUsLDFANExrZh2J"
+    );
     console.log("speed acc: ", speedMarketAccount);
     console.log("provider acc: ", provider.wallet);
     const [speedMarketPDA, speedMarketBump] =
@@ -37,6 +41,7 @@ describe("speed-markets", () => {
           marketRequirements: marketRequirementsAccount.publicKey,
           user: provider.wallet.publicKey,
           speedMarket: speedMarketPDA,
+          priceFeed: btcFeed,
           systemProgram: SystemProgram.programId,
         }
       });

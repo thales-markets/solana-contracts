@@ -4,6 +4,7 @@ use std::str::FromStr;
 declare_id!("EfscCNT9ERcPjNatjatcJRsuWLjqo5jSngbbS4Yim1i");
 
 const BTC_USDC_FEED: &str = "HovQMDrbAgAYPCmHVSrezcSmkMtXSSUsLDFANExrZh2J";
+const ETH_USDC_FEED: &str = "EdVCmQ9FSPcVe5YySXDPCRmc8aDQLKJ9xvYBMZPie1Vw";
 
 #[program]
 mod speed_markets {
@@ -39,6 +40,7 @@ mod speed_markets {
         speed_market.lp_fee = 5;
         speed_market.resolved = false;
         // require!(speed_market.user.key() == Pubkey::from_str(BTC_USDC_FEED).unwrap() , Errors::DirectionError);
+        require!(ctx.accounts.price_feed.key() == Pubkey::from_str(BTC_USDC_FEED).unwrap() || ctx.accounts.price_feed.key() == Pubkey::from_str(ETH_USDC_FEED).unwrap() , Errors::InvalidPriceFeed);
         speed_market.user = ctx.accounts.user.key();
         Ok(())
     }
@@ -47,6 +49,8 @@ mod speed_markets {
 
 #[error_code]
 pub enum Errors {
+    #[msg("Invalid price feed")]
+    InvalidPriceFeed,
     #[msg("Strike time lower than current time")]
     StrikeTimeInThePast,
     #[msg("Strike Min/Max time exceeded")]
@@ -82,6 +86,9 @@ pub struct CreateSpeedMarket<'info> {
     
     #[account(mut)]
     pub market_requirements: Account<'info, SpeedMarketRequirements>,
+    #[account(mut)]
+    /// CHECK: checked in the implementation
+    pub price_feed: AccountInfo<'info>,
     /// CHECK: only used as a signing PDA
     // pub authority: UncheckedAccount<'info>,
     pub system_program: Program<'info, System>,
