@@ -1,5 +1,10 @@
 use anchor_lang::prelude::*;
+use anchor_spl::token::Token;
 use std::str::FromStr;
+use spl_token::instruction::{transfer, initialize_account, TokenInstruction::Transfer};
+use spl_token::state::Account as TokenAccount;
+// use spl_token::instruction::{transfer, initialize_account, TokenInstruction::Transfer};
+// use spl_token::state::Account as TokenAccount;
 
 declare_id!("EfscCNT9ERcPjNatjatcJRsuWLjqo5jSngbbS4Yim1i");
 
@@ -42,6 +47,33 @@ mod speed_markets {
         // require!(speed_market.user.key() == Pubkey::from_str(BTC_USDC_FEED).unwrap() , Errors::DirectionError);
         require!(ctx.accounts.price_feed.key() == Pubkey::from_str(BTC_USDC_FEED).unwrap() || ctx.accounts.price_feed.key() == Pubkey::from_str(ETH_USDC_FEED).unwrap() , Errors::InvalidPriceFeed);
         speed_market.user = ctx.accounts.user.key();
+
+        let seeds = &[b"speed_market_token".as_ref(), ctx.accounts.user.key().as_ref(), bump];
+        let signer = &[&seeds[..]];
+
+        // Transfer SPL tokens from the user to the speed_market PDA
+        let cpi_accounts = Transfer {
+            from: ctx.accounts.user_spl_token_account.to_account_info(),
+            to: ctx.accounts.speed_market_spl_token_account.to_account_info(),
+            authority: ctx.accounts.user.to_account_info(),
+        };
+        let cpi_program = ctx.accounts.token_program.to_account_info();
+        let cpi_ctx = CpiContext::new(cpi_program, cpi_accounts).with_signer(signer);
+        spl_token::instruction::transfer(cpi_ctx, buy_in_amount)?;
+
+        // let seeds = &[b"speed_market_token".as_ref(), ctx.accounts.user.key().as_ref(), bump];
+        // let signer = &[&seeds[..]];
+
+        // // Transfer SPL tokens from the user to the speed_market PDA
+        // let cpi_accounts = spl_token::instruction::TokenInstruction::Transfer {
+        //     from: ctx.accounts.user_spl_token_account.to_account_info(),
+        //     to: ctx.accounts.speed_market_spl_token_account.to_account_info(),
+        //     authority: ctx.accounts.user.to_account_info(),
+        // };
+        // let cpi_program = ctx.accounts.token_program.to_account_info();
+        // let cpi_ctx = CpiContext::new(cpi_program, cpi_accounts).with_signer(signer);
+        // spl_token::instruction::transfer(cpi_ctx, buy_in_amount)?;
+
         Ok(())
     }
     
@@ -92,6 +124,13 @@ pub struct CreateSpeedMarket<'info> {
     /// CHECK: only used as a signing PDA
     // pub authority: UncheckedAccount<'info>,
     pub system_program: Program<'info, System>,
+
+    // SPL Token accounts for the transfer
+    #[account(mut)]
+    pub user_spl_token_account: Account<'info, anchor_spl::token::TokenAccount>,
+    #[account(init, payer = user, space = spl_token::state::Account::LEN, seeds = [b"speed_market_token".as_ref(), user.key().as_ref()], bump)]
+    pub speed_market_spl_token_account: Account<'info, anchor_spl::token::TokenAccount>,
+    pub token_program: Program<'info, Token>,
 }
 
 #[account]
