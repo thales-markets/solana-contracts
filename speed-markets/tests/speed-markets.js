@@ -118,10 +118,11 @@ describe("speed-markets", () => {
       provider.connection,
       userBTokenAccount.address
     );
+
     
     console.log("Token amount for A before mint: ", userATokenAccountInfo.amount);
     console.log("Token amount for B before mint: ", userBTokenAccountInfo.amount);
-
+    
     // Mint 1 new token to the "fromTokenAccount" account we just created
     let signature = await mintTo(
       provider.connection,
@@ -130,11 +131,11 @@ describe("speed-markets", () => {
       userATokenAccountInfo.address,
       userA.publicKey,
       1000000000
-    );
-    console.log('mint tx:', signature);
-    
-    console.log("new userA token account: ", userATokenAccountInfo.address.toBase58());
-    
+      );
+      console.log('mint tx:', signature);
+      
+      console.log("new userA token account: ", userATokenAccountInfo.address.toBase58());
+      
     signature = await transfer(
       provider.connection,
       userA,
@@ -143,6 +144,7 @@ describe("speed-markets", () => {
       userA.publicKey,
       50
     );
+
     
     console.log('transfer tx:', signature);
 
@@ -157,50 +159,92 @@ describe("speed-markets", () => {
     
     console.log("Token amount for A after transfer: ", userATokenAccountInfo.amount);
     console.log("Token amount for B after transfer: ", userBTokenAccountInfo.amount);
+
+    const userC = Keypair.generate();
+
+    const userCTokenAccount = await getOrCreateAssociatedTokenAccount(
+      provider.connection,
+      userA,
+      mint,
+      userC.publicKey
+    );
+
+    let userCTokenAccountInfo = await getAccount(
+      provider.connection,
+      userCTokenAccount.address
+    );
+
+    await provider.connection.requestAirdrop(
+      userC.publicKey,
+      LAMPORTS_PER_SOL
+    )
+
+    signature = await transfer(
+      provider.connection,
+      userA,
+      userATokenAccountInfo.address,
+      userCTokenAccountInfo.address,
+      userA.publicKey,
+      50,
+      [userA, userC]
+    );
+
+    userATokenAccountInfo = await getAccount(
+      provider.connection,
+      userATokenAccount.address
+    );
+    userCTokenAccountInfo = await getAccount(
+      provider.connection,
+      userCTokenAccount.address
+    );
+    
+    console.log("Token amount for A after transfer: ", userATokenAccountInfo.amount);
+    console.log("Token amount for C after transfer: ", userCTokenAccountInfo.amount);
+
     
   });
 
-  // it("Create speed markets", async () => {
-  //   const marketRequirementsAccount = anchor.web3.Keypair.generate();
-  //   const priceFeed = anchor.web3.Keypair.generate();
-  //   const speedMarketAccount = anchor.web3.Keypair.generate();
-  //   const btcFeed = new PublicKey(
-  //     "HovQMDrbAgAYPCmHVSrezcSmkMtXSSUsLDFANExrZh2J"
-  //   );
-  //   console.log("speed acc: ", speedMarketAccount);
-  //   console.log("provider acc: ", provider.wallet);
-  //   const [speedMarketPDA, speedMarketBump] =
-  //     await PublicKey.findProgramAddressSync([anchor.utils.bytes.utf8.encode("speed"), provider.wallet.publicKey.toBuffer()], speedMarketsProgram.programId);
-  //   console.log("SpeedMarketPDA: ", speedMarketPDA.toString());
-  //   console.log("SpeedMarketAccount: ", speedMarketAccount.publicKey.toString());
-  //   console.log("speedMarketBump: ", speedMarketBump);
-  //   console.log("rpc: \n", program.rpc);
-  //   let now = parseInt(Date.now()/1000);
-  //   console.log("time: ", now);
-  //   await program.rpc.initializeMarketRequirements(new anchor.BN(10), new anchor.BN(100), new anchor.BN(20), new anchor.BN(200), new anchor.BN(2),{
-  //     accounts:{
-  //       marketRequirements: marketRequirementsAccount.publicKey,
-  //       user: provider.wallet.publicKey,
-  //       systemProgram: SystemProgram.programId,
-  //     }, signers: [marketRequirementsAccount],
-  //   });
-  //   try {
-  //     const create_tx = await program.rpc.createSpeedMarket(speedMarketBump, new anchor.BN(now+50), new anchor.BN(0), new anchor.BN(100), {
-  //       accounts:{
-  //         marketRequirements: marketRequirementsAccount.publicKey,
-  //         user: provider.wallet.publicKey,
-  //         speedMarket: speedMarketPDA,
-  //         priceFeed: btcFeed,
-  //         systemProgram: SystemProgram.programId,
-  //       }
-  //     });
-  //     console.log("create tx: ", create_tx);
+  it("Create speed markets", async () => {
+    const marketRequirementsAccount = anchor.web3.Keypair.generate();
+    const priceFeed = anchor.web3.Keypair.generate();
+    const speedMarketAccount = anchor.web3.Keypair.generate();
+    const btcFeed = new PublicKey(
+      "HovQMDrbAgAYPCmHVSrezcSmkMtXSSUsLDFANExrZh2J"
+    );
+    console.log("speed acc: ", speedMarketAccount);
+    console.log("provider acc: ", provider.wallet);
+    const [speedMarketPDA, speedMarketBump] =
+      await PublicKey.findProgramAddressSync([anchor.utils.bytes.utf8.encode("speed"), provider.wallet.publicKey.toBuffer()], speedMarketsProgram.programId);
+    console.log("SpeedMarketPDA: ", speedMarketPDA.toString());
+    console.log("SpeedMarketAccount: ", speedMarketAccount.publicKey.toString());
+    console.log("speedMarketBump: ", speedMarketBump);
+    console.log("rpc: \n", program.rpc);
+    let now = parseInt(Date.now()/1000);
+    console.log("time: ", now);
+    await program.rpc.initializeMarketRequirements(new anchor.BN(10), new anchor.BN(100), new anchor.BN(20), new anchor.BN(200), new anchor.BN(2),{
+      accounts:{
+        marketRequirements: marketRequirementsAccount.publicKey,
+        user: provider.wallet.publicKey,
+        systemProgram: SystemProgram.programId,
+      }, signers: [marketRequirementsAccount],
+    });
+    try {
+      const create_tx = await program.rpc.createSpeedMarket(speedMarketBump, new anchor.BN(now+50), new anchor.BN(0), new anchor.BN(100), {
+        accounts:{
+          marketRequirements: marketRequirementsAccount.publicKey,
+          user: provider.wallet.publicKey,
+          speedMarket: speedMarketPDA,
+          priceFeed: btcFeed,
+          systemProgram: SystemProgram.programId,
+        }
+      });
+      console.log("create tx: ", create_tx);
 
-  //   }
-  //   catch(err) {
-  //     throw err;
-  //   }
+    }
+    catch(err) {
+      throw err;
+    }
 
-  // });
+  });
   
 });
