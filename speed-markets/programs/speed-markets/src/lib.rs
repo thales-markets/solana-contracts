@@ -1,6 +1,7 @@
 use anchor_lang::prelude::*;
 use std::str::FromStr;
-use anchor_spl::token::{self, Token, TokenAccount, Transfer as SplTransfer};
+use anchor_spl::associated_token::AssociatedToken;
+use anchor_spl::token::{self, CloseAccount, Mint, Token, TokenAccount, TransferChecked};
 
 declare_id!("EfscCNT9ERcPjNatjatcJRsuWLjqo5jSngbbS4Yim1i");
 
@@ -43,23 +44,6 @@ mod speed_markets {
         // require!(speed_market.user.key() == Pubkey::from_str(BTC_USDC_FEED).unwrap() , Errors::DirectionError);
         require!(ctx.accounts.price_feed.key() == Pubkey::from_str(BTC_USDC_FEED).unwrap() || ctx.accounts.price_feed.key() == Pubkey::from_str(ETH_USDC_FEED).unwrap() , Errors::InvalidPriceFeed);
         speed_market.user = ctx.accounts.user.key();
-
-        let destination = &ctx.accounts.to_ata;
-        let source = &ctx.accounts.from_ata;
-        let token_program = &ctx.accounts.token_program;
-        let authority = &ctx.accounts.from;
-
-        // Transfer tokens from taker to initializer
-        let cpi_accounts = SplTransfer {
-            from: source.to_account_info().clone(),
-            to: destination.to_account_info().clone(),
-            authority: authority.to_account_info().clone(),
-        };
-        let cpi_program = token_program.to_account_info();
-        
-        token::transfer(
-            CpiContext::new(cpi_program, cpi_accounts),
-            buy_in_amount)?;
 
         Ok(())
     }
@@ -112,12 +96,6 @@ pub struct CreateSpeedMarket<'info> {
     // pub authority: UncheckedAccount<'info>,
     pub system_program: Program<'info, System>,
 
-    pub from: Signer<'info>,
-    #[account(mut)]
-    pub from_ata: Account<'info, TokenAccount>,
-    #[account(mut)]
-    pub to_ata: Account<'info, TokenAccount>,
-    pub token_program: Program<'info, Token>,
 }
 
 
@@ -133,6 +111,8 @@ pub struct SpeedMarketRequirements {
 #[account]
 pub struct SpeedMarket {
     pub user: Pubkey,
+    pub token: Pubkey,
+    pub escrow_wallet: Pubkey,
     pub asset: Pubkey,
     pub strike_time: i64,
     pub strike_price: i64,
@@ -147,5 +127,5 @@ pub struct SpeedMarket {
 }
 
 impl SpeedMarket {
-    const LEN: usize = 32 + 32 + (3 * 8) + 1 + 1 + 8 + 1 + (3 * 8);
+    const LEN: usize = (4*32) + (3 * 8) + 1 + 1 + 8 + 1 + (3 * 8);
 }

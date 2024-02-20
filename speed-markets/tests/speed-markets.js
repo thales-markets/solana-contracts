@@ -197,11 +197,8 @@ describe("speed-markets", () => {
       provider.connection,
       userCTokenAccount.address
     );
-    
     console.log("Token amount for A after transfer: ", userATokenAccountInfo.amount);
     console.log("Token amount for C after transfer: ", userCTokenAccountInfo.amount);
-
-    
   });
 
   it("Create speed markets", async () => {
