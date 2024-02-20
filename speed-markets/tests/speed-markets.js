@@ -201,47 +201,148 @@ describe("speed-markets", () => {
     console.log("Token amount for C after transfer: ", userCTokenAccountInfo.amount);
   });
 
-  it("Create speed markets", async () => {
-    const marketRequirementsAccount = anchor.web3.Keypair.generate();
-    const priceFeed = anchor.web3.Keypair.generate();
-    const speedMarketAccount = anchor.web3.Keypair.generate();
-    const btcFeed = new PublicKey(
-      "HovQMDrbAgAYPCmHVSrezcSmkMtXSSUsLDFANExrZh2J"
-    );
-    console.log("speed acc: ", speedMarketAccount);
-    console.log("provider acc: ", provider.wallet);
-    const [speedMarketPDA, speedMarketBump] =
-      await PublicKey.findProgramAddressSync([anchor.utils.bytes.utf8.encode("speed"), provider.wallet.publicKey.toBuffer()], speedMarketsProgram.programId);
-    console.log("SpeedMarketPDA: ", speedMarketPDA.toString());
-    console.log("SpeedMarketAccount: ", speedMarketAccount.publicKey.toString());
-    console.log("speedMarketBump: ", speedMarketBump);
-    console.log("rpc: \n", program.rpc);
-    let now = parseInt(Date.now()/1000);
-    console.log("time: ", now);
-    await program.rpc.initializeMarketRequirements(new anchor.BN(10), new anchor.BN(100), new anchor.BN(20), new anchor.BN(200), new anchor.BN(2),{
-      accounts:{
-        marketRequirements: marketRequirementsAccount.publicKey,
-        user: provider.wallet.publicKey,
-        systemProgram: SystemProgram.programId,
-      }, signers: [marketRequirementsAccount],
+  describe("speed-markets", () => {
+    const mintAuthority = Keypair.generate();
+    const freezeAuthority = Keypair.generate();
+    const user_account = Keypair.generate();
+    let tokenAccount;
+
+    beforeEach(async () => {
+      const airdropSignature = await provider.connection.requestAirdrop(
+        user_account.publicKey,
+        LAMPORTS_PER_SOL
+      )
+      await provider.connection.confirmTransaction(airdropSignature);
+      const mint = await createMint(
+        provider.connection,
+        user_account,
+        mintAuthority.publicKey,
+        freezeAuthority.publicKey,
+        9 // We are using 9 to match the CLI decimal default exactly
+      );
+      console.log("new token address: ", mint.toBase58());
+      let mintInfo = await getMint(
+        provider.connection,
+        mint
+      );
+      console.log("token supply: ", mintInfo.supply);
+      tokenAccount = await getOrCreateAssociatedTokenAccount(
+        provider.connection,
+        user_account,
+        mint,
+        user_account.publicKey
+      );
+      let tokenAccountInfo = await getAccount(
+        provider.connection,
+        tokenAccount.address
+      );
+      console.log("Token amount before mint: ", tokenAccountInfo.amount);
+      console.log("new token account: ", tokenAccount.address.toBase58());
+      await mintTo(
+        provider.connection,
+        user_account,
+        mint,
+        tokenAccount.address,
+        mintAuthority,
+        100000000000 // because decimals for the mint are set to 9 
+      );
+      mintInfo = await getMint(
+        provider.connection,
+        mint
+      )
+      console.log("mint amount: ", mintInfo.supply);
+      tokenAccountInfo = await getAccount(
+        provider.connection,
+        tokenAccount.address
+      );
+      console.log("Token amount after mint: ", tokenAccountInfo.amount);
     });
-    try {
-      const create_tx = await program.rpc.createSpeedMarket(speedMarketBump, new anchor.BN(now+50), new anchor.BN(0), new anchor.BN(100), {
+    it("Create a speed market", async () => {
+      const marketRequirementsAccount = anchor.web3.Keypair.generate();
+      const priceFeed = anchor.web3.Keypair.generate();
+      const speedMarketAccount = anchor.web3.Keypair.generate();
+      const btcFeed = new PublicKey(
+        "HovQMDrbAgAYPCmHVSrezcSmkMtXSSUsLDFANExrZh2J"
+      );
+      console.log("speed acc: ", speedMarketAccount);
+      console.log("provider acc: ", provider.wallet);
+      const [speedMarketPDA, speedMarketBump] =
+        await PublicKey.findProgramAddressSync([anchor.utils.bytes.utf8.encode("speed"), provider.wallet.publicKey.toBuffer()], speedMarketsProgram.programId);
+      console.log("SpeedMarketPDA: ", speedMarketPDA.toString());
+      console.log("SpeedMarketAccount: ", speedMarketAccount.publicKey.toString());
+      console.log("speedMarketBump: ", speedMarketBump);
+      console.log("rpc: \n", program.rpc);
+      let now = parseInt(Date.now()/1000);
+      console.log("time: ", now);
+      await program.rpc.initializeMarketRequirements(new anchor.BN(10), new anchor.BN(100), new anchor.BN(20), new anchor.BN(200), new anchor.BN(2),{
         accounts:{
           marketRequirements: marketRequirementsAccount.publicKey,
           user: provider.wallet.publicKey,
-          speedMarket: speedMarketPDA,
-          priceFeed: btcFeed,
           systemProgram: SystemProgram.programId,
-        }
+        }, signers: [marketRequirementsAccount],
       });
-      console.log("create tx: ", create_tx);
-
-    }
-    catch(err) {
-      throw err;
-    }
+      try {
+        const create_tx = await program.rpc.createSpeedMarket(speedMarketBump, new anchor.BN(now+50), new anchor.BN(0), new anchor.BN(100), {
+          accounts:{
+            marketRequirements: marketRequirementsAccount.publicKey,
+            user: provider.wallet.publicKey,
+            speedMarket: speedMarketPDA,
+            priceFeed: btcFeed,
+            systemProgram: SystemProgram.programId,
+          }
+        });
+        console.log("create tx: ", create_tx);
+  
+      }
+      catch(err) {
+        throw err;
+      }
+  
+    });
 
   });
+
+  // it("Create speed markets", async () => {
+  //   const marketRequirementsAccount = anchor.web3.Keypair.generate();
+  //   const priceFeed = anchor.web3.Keypair.generate();
+  //   const speedMarketAccount = anchor.web3.Keypair.generate();
+  //   const btcFeed = new PublicKey(
+  //     "HovQMDrbAgAYPCmHVSrezcSmkMtXSSUsLDFANExrZh2J"
+  //   );
+  //   console.log("speed acc: ", speedMarketAccount);
+  //   console.log("provider acc: ", provider.wallet);
+  //   const [speedMarketPDA, speedMarketBump] =
+  //     await PublicKey.findProgramAddressSync([anchor.utils.bytes.utf8.encode("speed"), provider.wallet.publicKey.toBuffer()], speedMarketsProgram.programId);
+  //   console.log("SpeedMarketPDA: ", speedMarketPDA.toString());
+  //   console.log("SpeedMarketAccount: ", speedMarketAccount.publicKey.toString());
+  //   console.log("speedMarketBump: ", speedMarketBump);
+  //   console.log("rpc: \n", program.rpc);
+  //   let now = parseInt(Date.now()/1000);
+  //   console.log("time: ", now);
+  //   await program.rpc.initializeMarketRequirements(new anchor.BN(10), new anchor.BN(100), new anchor.BN(20), new anchor.BN(200), new anchor.BN(2),{
+  //     accounts:{
+  //       marketRequirements: marketRequirementsAccount.publicKey,
+  //       user: provider.wallet.publicKey,
+  //       systemProgram: SystemProgram.programId,
+  //     }, signers: [marketRequirementsAccount],
+  //   });
+  //   try {
+  //     const create_tx = await program.rpc.createSpeedMarket(speedMarketBump, new anchor.BN(now+50), new anchor.BN(0), new anchor.BN(100), {
+  //       accounts:{
+  //         marketRequirements: marketRequirementsAccount.publicKey,
+  //         user: provider.wallet.publicKey,
+  //         speedMarket: speedMarketPDA,
+  //         priceFeed: btcFeed,
+  //         systemProgram: SystemProgram.programId,
+  //       }
+  //     });
+  //     console.log("create tx: ", create_tx);
+
+  //   }
+  //   catch(err) {
+  //     throw err;
+  //   }
+
+  // });
   
 });
