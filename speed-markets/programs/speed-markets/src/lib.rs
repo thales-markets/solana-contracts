@@ -1,7 +1,7 @@
 use anchor_lang::prelude::*;
 use std::str::FromStr;
 use anchor_spl::associated_token::AssociatedToken;
-use anchor_spl::token::{self, CloseAccount, Mint, Token, TokenAccount, TransferChecked};
+use anchor_spl::token::{self, CloseAccount, Mint, Token, TokenAccount, TransferChecked, Transfer};
 
 declare_id!("EfscCNT9ERcPjNatjatcJRsuWLjqo5jSngbbS4Yim1i");
 
@@ -41,10 +41,36 @@ mod speed_markets {
         speed_market.safe_box_impact = 5;
         speed_market.lp_fee = 5;
         speed_market.resolved = false;
+        speed_market.token_mint = ctx.accounts.token_mint.key();
         // require!(speed_market.user.key() == Pubkey::from_str(BTC_USDC_FEED).unwrap() , Errors::DirectionError);
         require!(ctx.accounts.price_feed.key() == Pubkey::from_str(BTC_USDC_FEED).unwrap() || ctx.accounts.price_feed.key() == Pubkey::from_str(ETH_USDC_FEED).unwrap() , Errors::InvalidPriceFeed);
         speed_market.user = ctx.accounts.user.key();
-
+        let mint_token = ctx.accounts.token_mint.key().clone();
+        let user_from = ctx.accounts.user.key().clone();
+        let strike_time_cloned = strike_time.to_le_bytes();
+        let direction_cloned = direction.to_le_bytes();
+        let buy_in_amount_cloned = buy_in_amount.to_le_bytes();
+        let inner = vec![
+            b"speed".as_ref(),
+            user_from.as_ref(),
+            mint_token.as_ref(),
+            strike_time_cloned.as_ref(),
+            direction_cloned.as_ref(),
+            buy_in_amount_cloned.as_ref(),
+        ];
+        let outer = vec![inner.as_slice()];
+        let transfer_instruction = Transfer{
+            from: ctx.accounts.wallet_to_withdraw_from.to_account_info(),
+            to: ctx.accounts.speed_market_wallet.to_account_info(),
+            authority: ctx.accounts.user.to_account_info(),
+        };
+        let cpi_ctx = CpiContext::new_with_signer(
+            ctx.accounts.token_program.to_account_info(),
+            transfer_instruction,
+            outer.as_slice(),
+        );
+        
+        anchor_spl::token::transfer(cpi_ctx, buy_in_amount)?;
         Ok(())
     }
     
