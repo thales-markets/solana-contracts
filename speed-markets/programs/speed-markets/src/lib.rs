@@ -72,30 +72,57 @@ pub struct InitializeSpeedMarketRequirements<'info> {
 }
 
 #[derive(Accounts)]
+#[instruction(strike_time: i64, direction: u8, buy_in_amount: u64)]
 pub struct CreateSpeedMarket<'info> {
-    #[account(mut)]
-    pub user: Signer<'info>,
     #[account(
         init,
         seeds = [
             b"speed".as_ref(),
-            user.key().as_ref()
+            user.key().as_ref(),
+            token_mint.key().as_ref(),
+            strike_time.to_le_bytes().as_ref(),
+            direction.to_le_bytes().as_ref(),
+            buy_in_amount.to_le_bytes().as_ref(),
             ],
             bump,
             payer = user,
             space = 8 + SpeedMarket::LEN
         )]
     pub speed_market: Account<'info, SpeedMarket>,
+    #[account(
+        init,
+        payer = user,
+        seeds=[
+            b"wallet".as_ref(), 
+            user.key().as_ref(),
+            token_mint.key().as_ref(),
+            strike_time.to_le_bytes().as_ref(),
+            direction.to_le_bytes().as_ref(),
+            buy_in_amount.to_le_bytes().as_ref(),
+            ],
+        bump,
+        token::mint=token_mint,
+        token::authority=speed_market,
+    )]
+    pub speed_market_wallet: Account<'info, TokenAccount>,
+    #[account(mut)]
+    pub user: Signer<'info>,
+    pub token_mint: Account<'info, Mint>,
+    #[account(
+        mut,
+        constraint=wallet_to_withdraw_from.owner == user.key(),
+        constraint=wallet_to_withdraw_from.mint == token_mint.key()
+    )]
+    pub wallet_to_withdraw_from: Account<'info, TokenAccount>,
     
     #[account(mut)]
     pub market_requirements: Account<'info, SpeedMarketRequirements>,
     #[account(mut)]
     /// CHECK: checked in the implementation
     pub price_feed: AccountInfo<'info>,
-    /// CHECK: only used as a signing PDA
-    // pub authority: UncheckedAccount<'info>,
     pub system_program: Program<'info, System>,
-
+    pub token_program: Program<'info, Token>,
+    pub rent: Sysvar<'info, Rent>,
 }
 
 
@@ -111,7 +138,7 @@ pub struct SpeedMarketRequirements {
 #[account]
 pub struct SpeedMarket {
     pub user: Pubkey,
-    pub token: Pubkey,
+    pub token_mint: Pubkey,
     pub escrow_wallet: Pubkey,
     pub asset: Pubkey,
     pub strike_time: i64,
