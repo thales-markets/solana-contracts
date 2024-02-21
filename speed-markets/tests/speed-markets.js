@@ -2,6 +2,7 @@ const anchor = require("@coral-xyz/anchor");
 const assert = require("assert");
 const { Keypair, PublicKey, LAMPORTS_PER_SOL  } = require("@solana/web3.js");
 const { createMint, getMint, mintTo, getOrCreateAssociatedTokenAccount, getAccount, transfer , TOKEN_PROGRAM_ID } = require('@solana/spl-token');
+const { log } = require("console");
 const { SystemProgram } = anchor.web3;
 
 describe("speed-markets", () => {
@@ -271,16 +272,21 @@ describe("speed-markets", () => {
       console.log("toke mint: ", mint.toBase58());
       const userWalletPubkey = user_account.publicKey;
       let now = parseInt(Date.now()/1000);
-      const marketStrikeTime = new anchor.BN(now + 100); // 100 seconds in future
+      const marketStrikeTime = new anchor.BN(parseInt(now + 100)); // 100 seconds in future
+      const marketStrikeTimeUtf8 = marketStrikeTime.toBuffer('le', 8);
       const directionUp = new anchor.BN(0);
+      const directionUpUtf8 = directionUp.toBuffer('le', 8);
       const directionDown = new anchor.BN(1);
       const buyInAmount = new anchor.BN(100);
       const [speedMarketPDA, speedMarketBump] =
         await PublicKey.findProgramAddressSync(
           [
             anchor.utils.bytes.utf8.encode("speed"), 
-            user_account.publicKey.toBuffer(), 
-            // marketStrikeTime.toBuffer('le', 8), 
+            user_account.publicKey.toBuffer(),
+            // directionUpUtf8
+            // anchor.utils.bytes.utf8.encode(directionUp.toString()),
+            // anchor.utils.bytes.utf8.encode(mint.toBase58()), 
+            // marketStrikeTime.toBuffer(), 
             // directionUp.toBuffer('le', 8), 
             // buyInAmount.toBuffer('le', 8)
           ],
@@ -290,13 +296,16 @@ describe("speed-markets", () => {
         await PublicKey.findProgramAddressSync(
           [
             anchor.utils.bytes.utf8.encode("wallet"), 
-            user_account.publicKey.toBuffer(), 
-            // marketStrikeTime.toBuffer('le', 8), 
+            user_account.publicKey.toBuffer(),
+            // directionUp.toBuffer('le', 8),
+            // directionUpUtf8,
+            // anchor.utils.bytes.utf8.encode(directionUp),
+            // marketStrikeTime.toBuffer(), 
             // directionUp.toBuffer('le', 8), 
             // buyInAmount.toBuffer('le', 8)
           ],
           program.programId
-        );
+        )
 
       console.log("SpeedMarketPDA: ", speedMarketPDA.toString());
       console.log("SpeedMarketBump: ", speedMarketBump.toString());
@@ -328,15 +337,15 @@ describe("speed-markets", () => {
       console.log("user: ", user_account.publicKey.toString());
       console.log("speedMarket: ", speedMarketPDA.toString());
       console.log("speedMarketWallet: ", speedMarketWalletPDA.toString());
-      console.log("tokenMint: ", tokenAccount.address.toString());
-      console.log("walletToWithdrawFrom: ", mint.toBase58());
+      console.log("tokenMint: ", mint.toBase58());
+      console.log("walletToWithdrawFrom: ", tokenAccount.address.toString());
       console.log("btcFeed: ", btcFeed.toString());
       console.log("systemProgram: ", SystemProgram.programId.toString());
       console.log("tokenProgram: ", TOKEN_PROGRAM_ID.toString());
       console.log("rent: ", anchor.web3.SYSVAR_RENT_PUBKEY.toString());
-
+      let create_tx;
       try {
-        const create_tx = await program.rpc.createSpeedMarket(
+        create_tx = await program.rpc.createSpeedMarket(
           speedMarketBump, 
           speedMarketWalletBump, 
           marketStrikeTime, 
@@ -357,13 +366,27 @@ describe("speed-markets", () => {
           signers: [user_account],
         });
         console.log("create tx: ", create_tx);
-  
+        
+        
       }
       catch(err) {
         throw err;
       }
+      const txDetails = await program.provider.connection.getTransaction(create_tx, {
+          maxSupportedTransactionVersion: 0,
+          commitment: "confirmed",
+        });
+      
+      console.log(txDetails);
+      const logs = txDetails?.meta?.logMessages || null;
+      
+      if (!logs) {
+        console.log("No logs found");
+      }
+      console.log(logs);
   
     });
+    
 
   });
 

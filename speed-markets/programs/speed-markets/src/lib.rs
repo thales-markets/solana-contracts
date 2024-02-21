@@ -70,7 +70,10 @@ mod speed_markets {
             transfer_instruction,
             outer.as_slice(),
         );
-        
+
+        msg!("Before sending tx");
+        msg!("Buy in amount: \n{}", &buy_in_amount);
+        // msg!("Cpi context: \n{:#?}", &ctx.accounts.speed_market_wallet.to_account_info());
         anchor_spl::token::transfer(cpi_ctx, buy_in_amount)?;
         Ok(())
     }
@@ -122,9 +125,9 @@ pub struct CreateSpeedMarket<'info> {
         seeds=[
             b"wallet".as_ref(), 
             user.key().as_ref(),
+            // direction.to_le_bytes().as_ref(),
             // token_mint.key().as_ref(),
             // strike_time.to_le_bytes().as_ref(),
-            // direction.to_le_bytes().as_ref(),
             // buy_in_amount.to_le_bytes().as_ref(),
             ],
         bump,
