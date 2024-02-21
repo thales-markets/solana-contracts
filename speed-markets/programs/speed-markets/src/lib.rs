@@ -23,8 +23,9 @@ mod speed_markets {
     }
 
     // pub fn create_speed_market(ctx: Context<CreateSpeedMarket>, bump: u8, asset: str, strikeTime: u64, direction: u8, buyInAmount: u64, skewImpact: u64) -> Result<()> {
-    pub fn create_speed_market(ctx: Context<CreateSpeedMarket>, bump: u8, strike_time: i64, direction: u8, buy_in_amount: u64) -> Result<()> {
+    pub fn create_speed_market(ctx: Context<CreateSpeedMarket>, bump: u8, wallet_bump: u8, strike_time: i64, direction: u8, buy_in_amount: u64) -> Result<()> {
         let bump = &[bump][..];
+        let wallet_bump = &[wallet_bump][..];
         let mut current_timestamp = Clock::get()?.unix_timestamp;
         msg!("current timestamp {}", &current_timestamp);
         require!(strike_time > current_timestamp, Errors::StrikeTimeInThePast);
@@ -105,10 +106,10 @@ pub struct CreateSpeedMarket<'info> {
         seeds = [
             b"speed".as_ref(),
             user.key().as_ref(),
-            token_mint.key().as_ref(),
-            strike_time.to_le_bytes().as_ref(),
-            direction.to_le_bytes().as_ref(),
-            buy_in_amount.to_le_bytes().as_ref(),
+            // token_mint.key().as_ref(),
+            // strike_time.to_le_bytes().as_ref(),
+            // direction.to_le_bytes().as_ref(),
+            // buy_in_amount.to_le_bytes().as_ref(),
             ],
             bump,
             payer = user,
@@ -121,10 +122,10 @@ pub struct CreateSpeedMarket<'info> {
         seeds=[
             b"wallet".as_ref(), 
             user.key().as_ref(),
-            token_mint.key().as_ref(),
-            strike_time.to_le_bytes().as_ref(),
-            direction.to_le_bytes().as_ref(),
-            buy_in_amount.to_le_bytes().as_ref(),
+            // token_mint.key().as_ref(),
+            // strike_time.to_le_bytes().as_ref(),
+            // direction.to_le_bytes().as_ref(),
+            // buy_in_amount.to_le_bytes().as_ref(),
             ],
         bump,
         token::mint=token_mint,
