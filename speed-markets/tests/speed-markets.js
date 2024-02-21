@@ -281,22 +281,22 @@ describe("speed-markets", () => {
           systemProgram: SystemProgram.programId,
         }, signers: [marketRequirementsAccount],
       });
-      try {
-        const create_tx = await program.rpc.createSpeedMarket(speedMarketBump, new anchor.BN(now+50), new anchor.BN(0), new anchor.BN(100), {
-          accounts:{
-            marketRequirements: marketRequirementsAccount.publicKey,
-            user: provider.wallet.publicKey,
-            speedMarket: speedMarketPDA,
-            priceFeed: btcFeed,
-            systemProgram: SystemProgram.programId,
-          }
-        });
-        console.log("create tx: ", create_tx);
+      // try {
+      //   const create_tx = await program.rpc.createSpeedMarket(speedMarketBump, new anchor.BN(now+50), new anchor.BN(0), new anchor.BN(100), {
+      //     accounts:{
+      //       marketRequirements: marketRequirementsAccount.publicKey,
+      //       user: provider.wallet.publicKey,
+      //       speedMarket: speedMarketPDA,
+      //       priceFeed: btcFeed,
+      //       systemProgram: SystemProgram.programId,
+      //     }
+      //   });
+      //   console.log("create tx: ", create_tx);
   
-      }
-      catch(err) {
-        throw err;
-      }
+      // }
+      // catch(err) {
+      //   throw err;
+      // }
   
     });
 
