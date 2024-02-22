@@ -340,7 +340,7 @@ describe("speed-markets", () => {
       
       console.log("SpeedMarketPDA: ", speedMarketPDA.toString());
       console.log("SpeedMarketBump: ", speedMarketBump.toString());
-      console.log("rpc: \n", program.rpc);
+      console.log("rpc: \n", program);
       console.log("time: ", now);
         
       const minStrikeTime = 10; // seconds
@@ -439,7 +439,22 @@ describe("speed-markets", () => {
 
       assert(deposited.toString(), buyInAmount.toString(), "Amount spent on speed market does not match");
       assert(deposited.toString(), speedMarketWallet.toString(), "Deposited amount does not match");
-
+      
+      let speedMarketObj = await program.account.speedMarket.fetch(speedMarketPDA);
+      // let speedMarketObj = program;
+      console.log("\n\n\n SpeedMarket created: ");
+      console.log("user: ", speedMarketObj.user.toString());
+      console.log("tokenMint: ", speedMarketObj.tokenMint.toString());
+      console.log("escrowWallet: ", speedMarketObj.escrowWallet.toString());
+      console.log("asset: ", speedMarketObj.asset.toString());
+      console.log("strikeTime: ", speedMarketObj.strikeTime.toString());
+      console.log("strikePrice: ", speedMarketObj.strikePrice.toString());
+      console.log("finalPrice: ", speedMarketObj.finalPrice.toString());
+      console.log("direction: ", speedMarketObj.direction.toString());
+      console.log("buyInAmount: ", speedMarketObj.buyInAmount.toString());
+      console.log("resolved: ", speedMarketObj.resolved);
+      console.log("lpFee: ", speedMarketObj.lpFee.toString());
+      console.log("createdAt: ", speedMarketObj.createdAt.toString());
   
     });
     

@@ -43,6 +43,7 @@ mod speed_markets {
         speed_market.lp_fee = 5;
         speed_market.resolved = false;
         speed_market.token_mint = ctx.accounts.token_mint.key();
+        speed_market.escrow_wallet = ctx.accounts.speed_market_wallet.key();
         // require!(speed_market.user.key() == Pubkey::from_str(BTC_USDC_FEED).unwrap() , Errors::DirectionError);
         require!(ctx.accounts.price_feed.key() == Pubkey::from_str(BTC_USDC_FEED).unwrap() || ctx.accounts.price_feed.key() == Pubkey::from_str(ETH_USDC_FEED).unwrap() , Errors::InvalidPriceFeed);
         speed_market.user = ctx.accounts.user.key();
