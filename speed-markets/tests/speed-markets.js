@@ -1,6 +1,6 @@
 const anchor = require("@coral-xyz/anchor");
 const assert = require("assert");
-const { Keypair, PublicKey, LAMPORTS_PER_SOL  } = require("@solana/web3.js");
+const { Keypair, PublicKey, LAMPORTS_PER_SOL, getTokenAccountsByOwner } = require("@solana/web3.js");
 const { createMint, getMint, mintTo, getOrCreateAssociatedTokenAccount, getAccount, transfer , TOKEN_PROGRAM_ID } = require('@solana/spl-token');
 const { log } = require("console");
 const { SystemProgram } = anchor.web3;
@@ -66,6 +66,30 @@ describe("speed-markets", () => {
       tokenAccount.address
     );
     console.log("Token amount after mint: ", tokenAccountInfo.amount);
+
+    const tokenAccounts = await provider.connection.getTokenAccountsByOwner(
+      newUser.publicKey, {
+        mint
+      }
+    );
+
+    // console.log("TOKEN ACCOUNTS DATA: \n", tokenAccounts.value[0].account);
+    // console.log("Token account info: ", tokenAccountInfo);
+    // console.log("MINT ACCOUNTS OWNER: \n", tokenAccounts.value[0].account.owner.toString());
+
+    console.log("user address: ", newUser.publicKey.toString());
+    console.log("mint address: ", mint.toBase58());
+    console.log("mint info address: ", mintInfo.address.toString());
+    console.log("mint info mintAuthority: ", mintInfo.mintAuthority.toString());
+    console.log("mint info freezeAuthority: ", mintInfo.freezeAuthority.toString());
+    console.log("mint info supply: ", mintInfo.supply.toString());
+    console.log("mint info decimals: ", mintInfo.decimals.toString());
+    console.log("address: ", tokenAccountInfo.address.toString());
+    console.log("owner: ", tokenAccountInfo.owner.toString());
+    console.log("mint: ", tokenAccountInfo.owner.toString());
+    console.log("amount: ", tokenAccountInfo.amount.toString());
+    assert(tokenAccountInfo.owner.toString() == newUser.publicKey.toString(), "User does not own token account");
+    assert(mintInfo.supply == tokenAccountInfo.amount, "User does not own full amount");
   });
 
   it("Simulate transfering tokens from A to B accounts", async () => {
@@ -263,6 +287,13 @@ describe("speed-markets", () => {
 
 
     it("Create a speed market", async () => {
+      let tokenAccountInfo = await getAccount(
+        provider.connection,
+        tokenAccount.address
+      );
+      console.log("amount before creaation: ", tokenAccountInfo.amount.toString());
+      let userTokenAmountBeforeCreation = tokenAccountInfo.amount;
+
       const marketRequirementsAccount = anchor.web3.Keypair.generate();
       const priceFeed = anchor.web3.Keypair.generate();
       const btcFeed = new PublicKey(
@@ -306,7 +337,7 @@ describe("speed-markets", () => {
           ],
           program.programId
         )
-
+      
       console.log("SpeedMarketPDA: ", speedMarketPDA.toString());
       console.log("SpeedMarketBump: ", speedMarketBump.toString());
       console.log("rpc: \n", program.rpc);
@@ -372,7 +403,7 @@ describe("speed-markets", () => {
       catch(err) {
         throw err;
       }
-      const txDetails = await program.provider.connection.getTransaction(create_tx, {
+      const txDetails = await provider.connection.getTransaction(create_tx, {
           maxSupportedTransactionVersion: 0,
           commitment: "confirmed",
         });
@@ -383,7 +414,32 @@ describe("speed-markets", () => {
       if (!logs) {
         console.log("No logs found");
       }
+      // const tokenAccounts = await provider.connection.getTokenAccountsByOwner(
+      //   user_account.publicKey, {
+      //     mint
+      //   }
+      // );
+
       console.log(logs);
+      tokenAccountInfo = await getAccount(
+        provider.connection,
+        tokenAccount.address
+      );
+      let walletAccountInfo = await getAccount(
+        provider.connection,
+        speedMarketWalletPDA
+      );
+      let speedMarketWallet = walletAccountInfo.amount;
+      let userTokenAmountAfterCreation = tokenAccountInfo.amount;
+      let deposited = parseInt(userTokenAmountBeforeCreation.toString()) - parseInt(userTokenAmountAfterCreation.toString());
+      console.log("Balance in new speed market wallet: ", speedMarketWallet.toString());
+      console.log("User token amount before creation: ", userTokenAmountBeforeCreation.toString());
+      console.log("User token amount after creation: ", userTokenAmountAfterCreation.toString());
+      console.log("Deposited: ", deposited);
+
+      assert(deposited.toString(), buyInAmount.toString(), "Amount spent on speed market does not match");
+      assert(deposited.toString(), speedMarketWallet.toString(), "Deposited amount does not match");
+
   
     });
     
