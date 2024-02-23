@@ -403,6 +403,9 @@ describe("speed-markets", () => {
       catch(err) {
         throw err;
       }
+
+      await delay(5000);
+
       const txDetails = await provider.connection.getTransaction(create_tx, {
           maxSupportedTransactionVersion: 0,
           commitment: "confirmed",
@@ -468,8 +471,30 @@ describe("speed-markets", () => {
       console.log(escrowWallet);
 
       // RESOLVE ATTEMPTS
-
-
+      
+      let resolve_tx = await program.rpc.resolveSpeedMarket(
+        speedMarketBump, 
+        {
+        accounts:{
+          user: user_account.publicKey,
+          speedMarket: speedMarketPDA,
+          speedMarketWallet: speedMarketWalletPDA,
+          tokenMint: mint,
+          walletToDepositTo: tokenAccount.address,
+          systemProgram: SystemProgram.programId,
+          tokenProgram: TOKEN_PROGRAM_ID,
+          rent: anchor.web3.SYSVAR_RENT_PUBKEY,
+        },
+        signers: [user_account],
+      });
+      console.log("resolve tx: ", create_tx);
+      await delay(5000);
+      const txDetails2 = await provider.connection.getTransaction(resolve_tx, {
+        maxSupportedTransactionVersion: 0,
+        commitment: "confirmed",
+      });
+      console.log(txDetails2);
+      console.log(txDetails2?.meta?.logMessages);
 
     });
     
@@ -520,3 +545,7 @@ describe("speed-markets", () => {
   // });
   
 });
+
+function delay(ms) {
+  return new Promise((resolve) => setTimeout(resolve, ms));
+}

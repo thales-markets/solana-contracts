@@ -82,7 +82,8 @@ mod speed_markets {
     
     pub fn resolve_speed_market(ctx: Context<ResolveSpeedMarket>, bump: u8 ) -> Result<()> {
         let bump = &[bump][..];
-        
+        let mut current_timestamp = Clock::get()?.unix_timestamp;
+        msg!("passed the requirements {}", &current_timestamp);
         Ok(())
     }
     
@@ -180,9 +181,6 @@ pub struct ResolveSpeedMarket<'info> {
     )]
     pub wallet_to_deposit_to: Account<'info, TokenAccount>,
 
-    #[account(mut)]
-    /// CHECK: checked in the implementation
-    pub price_feed: AccountInfo<'info>,
     pub system_program: Program<'info, System>,
     pub token_program: Program<'info, Token>,
     pub rent: Sysvar<'info, Rent>,
