@@ -26,7 +26,7 @@ mod speed_markets {
     pub fn create_speed_market(ctx: Context<CreateSpeedMarket>, bump: u8, wallet_bump: u8, strike_time: i64, direction: u8, buy_in_amount: u64) -> Result<()> {
         let bump = &[bump][..];
         let wallet_bump = &[wallet_bump][..];
-        let mut current_timestamp = Clock::get()?.unix_timestamp;
+        let current_timestamp = Clock::get()?.unix_timestamp;
         msg!("current timestamp {}", &current_timestamp);
         require!(strike_time > current_timestamp, Errors::StrikeTimeInThePast);
         require!(direction <= 1 , Errors::DirectionError);
@@ -82,8 +82,37 @@ mod speed_markets {
     
     pub fn resolve_speed_market(ctx: Context<ResolveSpeedMarket>, bump: u8 ) -> Result<()> {
         let bump = &[bump][..];
-        let mut current_timestamp = Clock::get()?.unix_timestamp;
+        let current_timestamp = Clock::get()?.unix_timestamp;
         msg!("passed the requirements {}", &current_timestamp);
+        let winning_amount = ctx.accounts.speed_market.buy_in_amount;
+        let mint_token = ctx.accounts.token_mint.key().clone();
+        let user_from = ctx.accounts.user.key().clone();
+        let wallet_to_withdraw_from = ctx.accounts.wallet_to_withdraw_from.key().clone();
+        let wallet_to_deposit_to = ctx.accounts.wallet_to_deposit_to.key().clone();
+        // let inner = vec![
+        //     b"speed".as_ref(),
+        //     user_from.as_ref(),
+        //     mint_token.as_ref(),
+        //     // wallet_to_withdraw_from.as_ref(),
+        //     // wallet_to_deposit_to.as_ref(),
+        //     // strike_time_cloned.as_ref(),
+        //     // direction_cloned.as_ref(),
+        //     // buy_in_amount_cloned.as_ref(),
+        // ];
+        // let outer = vec![inner.as_slice()];
+        // let transfer_instruction = Transfer{
+        //     from: ctx.accounts.wallet_to_withdraw_from.to_account_info(),
+        //     to: ctx.accounts.wallet_to_deposit_to.to_account_info(),
+        //     authority: ctx.accounts.user.to_account_info(),
+        // };
+        
+        // let cpi_ctx = CpiContext::new_with_signer(
+        //     ctx.accounts.token_program.to_account_info(),
+        //     transfer_instruction,
+        //     outer.as_slice(),
+        // );
+
+        // anchor_spl::token::transfer(cpi_ctx, winning_amount)?;
         Ok(())
     }
     
@@ -176,7 +205,14 @@ pub struct ResolveSpeedMarket<'info> {
     
     #[account(
         mut,
-        constraint=wallet_to_deposit_to.owner == speed_market.user.key(),
+        constraint=wallet_to_withdraw_from.owner == speed_market.key(),
+        constraint=wallet_to_deposit_to.mint == token_mint.key()
+    )]
+    pub wallet_to_withdraw_from: Account<'info, TokenAccount>,
+
+    #[account(
+        mut,
+        // constraint=wallet_to_deposit_to.owner == speed_market.user.key(),
         constraint=wallet_to_deposit_to.mint == token_mint.key()
     )]
     pub wallet_to_deposit_to: Account<'info, TokenAccount>,

@@ -478,9 +478,9 @@ describe("speed-markets", () => {
         accounts:{
           user: user_account.publicKey,
           speedMarket: speedMarketPDA,
-          speedMarketWallet: speedMarketWalletPDA,
           tokenMint: mint,
           walletToDepositTo: tokenAccount.address,
+          walletToWithdrawFrom: speedMarketWalletPDA,
           systemProgram: SystemProgram.programId,
           tokenProgram: TOKEN_PROGRAM_ID,
           rent: anchor.web3.SYSVAR_RENT_PUBKEY,
