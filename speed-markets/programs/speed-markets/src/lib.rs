@@ -66,6 +66,7 @@ mod speed_markets {
             to: ctx.accounts.speed_market_wallet.to_account_info(),
             authority: ctx.accounts.user.to_account_info(),
         };
+        
         let cpi_ctx = CpiContext::new_with_signer(
             ctx.accounts.token_program.to_account_info(),
             transfer_instruction,
@@ -76,6 +77,12 @@ mod speed_markets {
         msg!("Buy in amount: \n{}", &buy_in_amount);
         // msg!("Cpi context: \n{:#?}", &ctx.accounts.speed_market_wallet.to_account_info());
         anchor_spl::token::transfer(cpi_ctx, buy_in_amount)?;
+        Ok(())
+    }
+    
+    pub fn resolve_speed_market(ctx: Context<ResolveSpeedMarket>, bump: u8 ) -> Result<()> {
+        let bump = &[bump][..];
+        
         Ok(())
     }
     
@@ -148,6 +155,31 @@ pub struct CreateSpeedMarket<'info> {
     
     #[account(mut)]
     pub market_requirements: Account<'info, SpeedMarketRequirements>,
+    #[account(mut)]
+    /// CHECK: checked in the implementation
+    pub price_feed: AccountInfo<'info>,
+    pub system_program: Program<'info, System>,
+    pub token_program: Program<'info, Token>,
+    pub rent: Sysvar<'info, Rent>,
+}
+
+#[derive(Accounts)]
+pub struct ResolveSpeedMarket<'info> {
+    #[account(mut)]
+    pub speed_market: Account<'info, SpeedMarket>,
+    
+    #[account(mut)]
+    pub user: Signer<'info>,
+
+    pub token_mint: Account<'info, Mint>,
+    
+    #[account(
+        mut,
+        constraint=wallet_to_deposit_to.owner == speed_market.user.key(),
+        constraint=wallet_to_deposit_to.mint == token_mint.key()
+    )]
+    pub wallet_to_deposit_to: Account<'info, TokenAccount>,
+
     #[account(mut)]
     /// CHECK: checked in the implementation
     pub price_feed: AccountInfo<'info>,

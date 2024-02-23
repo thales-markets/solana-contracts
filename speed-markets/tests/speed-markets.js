@@ -414,17 +414,22 @@ describe("speed-markets", () => {
       if (!logs) {
         console.log("No logs found");
       }
-      // const tokenAccounts = await provider.connection.getTokenAccountsByOwner(
-      //   user_account.publicKey, {
-      //     mint
-      //   }
-      // );
+      const tokenAccounts = await provider.connection.getTokenAccountsByOwner(
+        tokenAccount.address, {
+          mint
+        }
+      );
+      
+      
+
+      console.log(tokenAccounts);
 
       console.log(logs);
       tokenAccountInfo = await getAccount(
         provider.connection,
         tokenAccount.address
       );
+      console.log(tokenAccountInfo);
       let walletAccountInfo = await getAccount(
         provider.connection,
         speedMarketWalletPDA
@@ -455,7 +460,17 @@ describe("speed-markets", () => {
       console.log("resolved: ", speedMarketObj.resolved);
       console.log("lpFee: ", speedMarketObj.lpFee.toString());
       console.log("createdAt: ", speedMarketObj.createdAt.toString());
-  
+
+      const escrowWallet = await getAccount(
+        provider.connection,
+        speedMarketObj.escrowWallet
+      );
+      console.log(escrowWallet);
+
+      // RESOLVE ATTEMPTS
+
+
+
     });
     
 
