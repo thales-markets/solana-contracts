@@ -56,9 +56,9 @@ mod speed_markets {
             b"speed".as_ref(),
             user_from.as_ref(),
             mint_token.as_ref(),
-            strike_time_cloned.as_ref(),
-            direction_cloned.as_ref(),
-            buy_in_amount_cloned.as_ref(),
+            // strike_time_cloned.as_ref(),
+            // direction_cloned.as_ref(),
+            // buy_in_amount_cloned.as_ref(),
         ];
         let outer = vec![inner.as_slice()];
         let transfer_instruction = Transfer{
@@ -147,10 +147,10 @@ pub struct CreateSpeedMarket<'info> {
         seeds = [
             b"speed".as_ref(),
             user.key().as_ref(),
-            // token_mint.key().as_ref(),
+            token_mint.key().as_ref(),
+            direction.to_le_bytes().as_ref(),
             // strike_time.to_le_bytes().as_ref(),
-            // direction.to_le_bytes().as_ref(),
-            // buy_in_amount.to_le_bytes().as_ref(),
+            // buy_in_amount.to_be_bytes().as_ref(),
             ],
             bump,
             payer = user,
@@ -163,8 +163,8 @@ pub struct CreateSpeedMarket<'info> {
         seeds=[
             b"wallet".as_ref(), 
             user.key().as_ref(),
-            // direction.to_le_bytes().as_ref(),
-            // token_mint.key().as_ref(),
+            token_mint.key().as_ref(),
+            direction.to_le_bytes().as_ref(),
             // strike_time.to_le_bytes().as_ref(),
             // buy_in_amount.to_le_bytes().as_ref(),
             ],

@@ -309,26 +309,49 @@ describe("speed-markets", () => {
       const directionUpUtf8 = directionUp.toBuffer('le', 8);
       const directionDown = new anchor.BN(1);
       const buyInAmount = new anchor.BN(100);
+
+      console.log("buyInLength 2: ", buyInAmount.toBuffer('le', 1).length);
+      console.log("buyInLength 2: ", buyInAmount.toBuffer('le', 2).length);
+      console.log("buyInLength 4: ", buyInAmount.toBuffer('le', 4).length);
+      console.log("buyInLength 8: ", buyInAmount.toBuffer('le', 8).length);
+      console.log("buyInLength 9: ", buyInAmount.toBuffer('le', 9).length);
+      console.log("buyIn to bufffer: \n", buyInAmount.toBuffer());
+      console.log("buyIn to bufffer be 1: \n", buyInAmount.toBuffer('be', 1));
+      console.log("buyIn to bufffer le 1: \n", buyInAmount.toBuffer('le', 1));
+      console.log("buyIn to bufffer be 2: \n", buyInAmount.toBuffer('be', 2));
+      console.log("buyIn to bufffer le 8: \n", buyInAmount.toBuffer('le', 8));
+      console.log("buyIn to bufffer be 8: \n", buyInAmount.toBuffer('be', 8));
+      console.log("direction to bufffer: \n", directionUp.toBuffer());
+      console.log("user account to bufffer: \n", user_account.publicKey.toBuffer());
+      console.log("mint to bufffer: \n", mint.toBuffer());
+
       const [speedMarketPDA, speedMarketBump] =
         await PublicKey.findProgramAddressSync(
           [
             anchor.utils.bytes.utf8.encode("speed"), 
             user_account.publicKey.toBuffer(),
+            mint.toBuffer(),
+            directionUp.toBuffer(), 
+            // buyInAmount.toBuffer(),
+            // buyInAmount.toArrayLike(Buffer, "le", 8)
+            // buyInAmount.toBuffer(),
+            // marketStrikeTime.toBuffer(), 
             // directionUpUtf8
             // anchor.utils.bytes.utf8.encode(directionUp.toString()),
             // anchor.utils.bytes.utf8.encode(mint.toBase58()), 
-            // marketStrikeTime.toBuffer(), 
-            // directionUp.toBuffer('le', 8), 
-            // buyInAmount.toBuffer('le', 8)
           ],
           program.programId
         );
+
       const [speedMarketWalletPDA, speedMarketWalletBump] =
         await PublicKey.findProgramAddressSync(
           [
             anchor.utils.bytes.utf8.encode("wallet"), 
             user_account.publicKey.toBuffer(),
-            // directionUp.toBuffer('le', 8),
+            mint.toBuffer(),
+            directionUp.toBuffer(), 
+            // marketStrikeTime.toBuffer(), 
+            // buyInAmount.toBuffer(),
             // directionUpUtf8,
             // anchor.utils.bytes.utf8.encode(directionUp),
             // marketStrikeTime.toBuffer(), 
