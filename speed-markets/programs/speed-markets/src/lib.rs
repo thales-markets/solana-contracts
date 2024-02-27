@@ -7,6 +7,8 @@ declare_id!("EfscCNT9ERcPjNatjatcJRsuWLjqo5jSngbbS4Yim1i");
 
 const BTC_USDC_FEED: &str = "HovQMDrbAgAYPCmHVSrezcSmkMtXSSUsLDFANExrZh2J";
 const ETH_USDC_FEED: &str = "EdVCmQ9FSPcVe5YySXDPCRmc8aDQLKJ9xvYBMZPie1Vw";
+const SPEED_SEED: &[u8] = b"speed";
+const SPEED_WALLET_SEED: &[u8] = b"wallet";
 
 #[program]
 mod speed_markets {
@@ -24,7 +26,7 @@ mod speed_markets {
 
     // pub fn create_speed_market(ctx: Context<CreateSpeedMarket>, bump: u8, asset: str, strikeTime: u64, direction: u8, buyInAmount: u64, skewImpact: u64) -> Result<()> {
     pub fn create_speed_market(ctx: Context<CreateSpeedMarket>, bump: u8, wallet_bump: u8, strike_time: i64, direction: u8, buy_in_amount: u64) -> Result<()> {
-        let bump = &[bump][..];
+        // let bump = &[bump][..];
         let wallet_bump = &[wallet_bump][..];
         let current_timestamp = Clock::get()?.unix_timestamp;
         msg!("current timestamp {}", &current_timestamp);
@@ -52,6 +54,10 @@ mod speed_markets {
         let strike_time_cloned = strike_time.to_le_bytes();
         let direction_cloned = direction.to_le_bytes();
         let buy_in_amount_cloned = buy_in_amount.to_le_bytes();
+
+        let speed_markets_ctx = &ctx.accounts.speed_market;
+        let bump_arbitrary = ctx.bumps.speed_market.to_le_bytes();
+        
         let inner = vec![
             b"speed".as_ref(),
             user_from.as_ref(),
@@ -61,16 +67,19 @@ mod speed_markets {
             // buy_in_amount_cloned.as_ref(),
         ];
         let outer = vec![inner.as_slice()];
+        // use in function
+        // outer.as_slice(),
         let transfer_instruction = Transfer{
             from: ctx.accounts.wallet_to_withdraw_from.to_account_info(),
             to: ctx.accounts.speed_market_wallet.to_account_info(),
             authority: ctx.accounts.user.to_account_info(),
         };
-        
+        let binding = [SPEED_SEED, bump_arbitrary.as_ref()];
         let cpi_ctx = CpiContext::new_with_signer(
             ctx.accounts.token_program.to_account_info(),
             transfer_instruction,
-            outer.as_slice(),
+            // outer.as_slice(),
+            &[&binding],
         );
 
         msg!("Before sending tx");
