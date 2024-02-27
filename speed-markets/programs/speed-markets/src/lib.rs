@@ -1,5 +1,6 @@
 use anchor_lang::prelude::*;
 use std::str::FromStr;
+use std::str;
 use anchor_spl::associated_token::AssociatedToken;
 use anchor_spl::token::{self, CloseAccount, Mint, Token, TokenAccount, TransferChecked, Transfer};
 
@@ -7,6 +8,7 @@ declare_id!("EfscCNT9ERcPjNatjatcJRsuWLjqo5jSngbbS4Yim1i");
 
 const BTC_USDC_FEED: &str = "HovQMDrbAgAYPCmHVSrezcSmkMtXSSUsLDFANExrZh2J";
 const ETH_USDC_FEED: &str = "EdVCmQ9FSPcVe5YySXDPCRmc8aDQLKJ9xvYBMZPie1Vw";
+const SPEED_SEED: &[u8] = b"speed";
 
 #[program]
 mod speed_markets {
@@ -44,39 +46,74 @@ mod speed_markets {
         speed_market.resolved = false;
         speed_market.token_mint = ctx.accounts.token_mint.key();
         speed_market.escrow_wallet = ctx.accounts.speed_market_wallet.key();
+        speed_market.bump = ctx.bumps.speed_market;
         // require!(speed_market.user.key() == Pubkey::from_str(BTC_USDC_FEED).unwrap() , Errors::DirectionError);
         require!(ctx.accounts.price_feed.key() == Pubkey::from_str(BTC_USDC_FEED).unwrap() || ctx.accounts.price_feed.key() == Pubkey::from_str(ETH_USDC_FEED).unwrap() , Errors::InvalidPriceFeed);
         speed_market.user = ctx.accounts.user.key();
         let mint_token = ctx.accounts.token_mint.key().clone();
         let user_from = ctx.accounts.user.key().clone();
         let strike_time_cloned = strike_time.to_le_bytes();
-        let direction_cloned = direction.to_le_bytes();
         let buy_in_amount_cloned = buy_in_amount.to_le_bytes();
+        let direction_cloned = direction.to_le_bytes();
+        let temp_bump = speed_market.bump.to_le_bytes();
+        msg!("user {}", user_from);
+        msg!("mint token {}", mint_token);
+        // msg!("direction {}", str::from_utf8(direction_cloned.as_ref()).unwrap());
+        // msg!("bump {}", str::from_utf8(temp_bump.as_ref()).unwrap());
+
+        let binding = &[
+                    SPEED_SEED.as_ref(), 
+                    user_from.as_ref(),
+                    mint_token.as_ref(),
+                    direction_cloned.as_ref(),
+                    temp_bump.as_ref()
+                    ];
         let inner = vec![
             b"speed".as_ref(),
             user_from.as_ref(),
             mint_token.as_ref(),
-            strike_time_cloned.as_ref(),
             direction_cloned.as_ref(),
-            buy_in_amount_cloned.as_ref(),
+            temp_bump.as_ref()
+            // strike_time_cloned.as_ref(),
+            // buy_in_amount_cloned.as_ref(),
+            // &[speed_market.bump][..]
+            // &[*ctx.bumps.get("speed_market").unwrap()]
         ];
         let outer = vec![inner.as_slice()];
-        let transfer_instruction = Transfer{
-            from: ctx.accounts.wallet_to_withdraw_from.to_account_info(),
-            to: ctx.accounts.speed_market_wallet.to_account_info(),
-            authority: ctx.accounts.user.to_account_info(),
-        };
         
-        let cpi_ctx = CpiContext::new_with_signer(
-            ctx.accounts.token_program.to_account_info(),
-            transfer_instruction,
-            outer.as_slice(),
-        );
+        // let transfer_instruction = Transfer{
+        //     from: ctx.accounts.wallet_to_withdraw_from.to_account_info(),
+        //     to: ctx.accounts.speed_market_wallet.to_account_info(),
+        //     authority: ctx.accounts.user.to_account_info(),
+        // };
+        
+        // let cpi_ctx = CpiContext::new_with_signer(
+        //     ctx.accounts.token_program.to_account_info(),
+        //     transfer_instruction,
+        //     // outer.as_slice(),
+        //     &[binding.as_ref()],
+        //     // &[&[SPEED_SEED.as_ref(), &[bumps.to_le_bytes()[0]]]],
+        // );
+
+        token::transfer(
+            CpiContext::new(
+                ctx.accounts.token_program.to_account_info(),
+                token::Transfer {
+                    from: ctx.accounts.wallet_to_withdraw_from.to_account_info(),
+                    to: ctx.accounts.speed_market_wallet.to_account_info(),
+                    authority: ctx.accounts.user.to_account_info(),
+                },
+            )
+            .with_signer(&[&binding[..]]),
+            // .with_signer(outer.as_slice()),
+            buy_in_amount,
+        )?;
+    
 
         msg!("Before sending tx");
         msg!("Buy in amount: \n{}", &buy_in_amount);
         // msg!("Cpi context: \n{:#?}", &ctx.accounts.speed_market_wallet.to_account_info());
-        anchor_spl::token::transfer(cpi_ctx, buy_in_amount)?;
+        // anchor_spl::token::transfer(cpi_ctx, buy_in_amount)?;
         Ok(())
     }
     
@@ -84,31 +121,67 @@ mod speed_markets {
         let bump = &[bump][..];
         let current_timestamp = Clock::get()?.unix_timestamp;
         msg!("passed the requirements {}", &current_timestamp);
-        let winning_amount = 2*ctx.accounts.speed_market.buy_in_amount;
+        let winning_amount = ctx.accounts.speed_market.buy_in_amount/2;
         let mint_token = ctx.accounts.token_mint.key().clone();
         let user_from = ctx.accounts.user.key().clone();
         let wallet_to_withdraw_from = ctx.accounts.wallet_to_withdraw_from.key().clone();
         let wallet_to_deposit_to = ctx.accounts.wallet_to_deposit_to.key().clone();
+        let escrow_wallet = ctx.accounts.speed_market.escrow_wallet.clone();
+        let direction_cloned = ctx.accounts.speed_market.direction.to_le_bytes();
+        let temp_bump = ctx.accounts.speed_market.bump.to_le_bytes();
 
-        let inner = vec![
-            b"speed".as_ref(),
-            user_from.as_ref(),
-            mint_token.as_ref(),
-            wallet_to_withdraw_from.as_ref(),
-            wallet_to_deposit_to.as_ref(),
-        ];
-        let outer = vec![inner.as_slice()];
-        let transfer_instruction = Transfer{
-            from: ctx.accounts.wallet_to_withdraw_from.to_account_info(),
-            to: ctx.accounts.wallet_to_deposit_to.to_account_info(),
-            authority: ctx.accounts.speed_market.to_account_info(),
-        };
+        // let inner = vec![
+        //     b"speed".as_ref(),
+        //     user_from.as_ref(),
+        //     mint_token.as_ref(),
+        //     wallet_to_withdraw_from.as_ref(),
+        //     wallet_to_deposit_to.as_ref(),
+        // ];
+        // let outer = vec![inner.as_slice()];
+        // let transfer_instruction = Transfer{
+        //     from: ctx.accounts.wallet_to_withdraw_from.to_account_info(),
+        //     to: ctx.accounts.wallet_to_deposit_to.to_account_info(),
+        //     authority: ctx.accounts.speed_market.to_account_info(),
+        // };
         
-        let cpi_ctx = CpiContext::new_with_signer(
-            ctx.accounts.token_program.to_account_info(),
-            transfer_instruction,
-            outer.as_slice(),
-        );
+        // let cpi_ctx = CpiContext::new_with_signer(
+        //     ctx.accounts.token_program.to_account_info(),
+        //     transfer_instruction,
+        //     outer.as_slice(),
+        // );
+
+        msg!("user {}", user_from);
+        msg!("mint token {}", mint_token);
+        msg!("escrow_wallet {}", escrow_wallet);
+        msg!("wallet_from {}", wallet_to_withdraw_from);
+        msg!("wallet_to {}", wallet_to_deposit_to);
+        // msg!("direction {}", str::from_utf8(&direction_cloned).unwrap());
+        // msg!("bump {}", str::from_utf8(&temp_bump).unwrap());
+
+
+        let binding = &[
+                    SPEED_SEED.as_ref(), 
+                    user_from.as_ref(),
+                    mint_token.as_ref(),
+                    direction_cloned.as_ref(),
+                    temp_bump.as_ref()
+                    ];
+
+        token::transfer(
+            CpiContext::new(
+                ctx.accounts.token_program.to_account_info(),
+                token::Transfer {
+                    from: ctx.accounts.wallet_to_withdraw_from.to_account_info(),
+                    to: ctx.accounts.wallet_to_deposit_to.to_account_info(),
+                    authority: ctx.accounts.speed_market.to_account_info(),
+                },
+            )
+            .with_signer(&[&binding[..]]),
+            // .with_signer(outer.as_slice()),
+            winning_amount,
+        )?;
+        
+        
         msg!("winning amount {}", &winning_amount);
         // msg!("winning amount {}", &ctx.accounts.speed_market.to_account_info());
         // msg!("outer {}", &outer.as_slice());
@@ -206,7 +279,7 @@ pub struct ResolveSpeedMarket<'info> {
     #[account(
         mut,
         constraint=wallet_to_withdraw_from.owner == speed_market.key(),
-        constraint=wallet_to_deposit_to.mint == token_mint.key()
+        constraint=wallet_to_withdraw_from.mint == token_mint.key()
     )]
     pub wallet_to_withdraw_from: Account<'info, TokenAccount>,
 
@@ -234,6 +307,7 @@ pub struct SpeedMarketRequirements {
 
 #[account]
 pub struct SpeedMarket {
+    pub bump: u8,
     pub user: Pubkey,
     pub token_mint: Pubkey,
     pub escrow_wallet: Pubkey,
@@ -251,5 +325,5 @@ pub struct SpeedMarket {
 }
 
 impl SpeedMarket {
-    const LEN: usize = (4*32) + (3 * 8) + 1 + 1 + 8 + 1 + (3 * 8);
+    const LEN: usize = 1 + (4*32) + (3 * 8) + 1 + 1 + 8 + 1 + (3 * 8);
 }
