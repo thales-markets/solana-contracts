@@ -461,6 +461,7 @@ describe("speed-markets", () => {
         speedMarketWalletPDA
       );
       let speedMarketWallet = walletAccountInfo.amount;
+      console.log("SpeedMarketWallet: ", walletAccountInfo);
       let userTokenAmountAfterCreation = tokenAccountInfo.amount;
       let deposited = parseInt(userTokenAmountBeforeCreation.toString()) - parseInt(userTokenAmountAfterCreation.toString());
       console.log("Balance in new speed market wallet: ", speedMarketWallet.toString());
