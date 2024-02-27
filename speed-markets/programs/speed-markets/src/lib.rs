@@ -56,9 +56,9 @@ mod speed_markets {
             b"speed".as_ref(),
             user_from.as_ref(),
             mint_token.as_ref(),
-            // strike_time_cloned.as_ref(),
-            // direction_cloned.as_ref(),
-            // buy_in_amount_cloned.as_ref(),
+            strike_time_cloned.as_ref(),
+            direction_cloned.as_ref(),
+            buy_in_amount_cloned.as_ref(),
         ];
         let outer = vec![inner.as_slice()];
         let transfer_instruction = Transfer{
@@ -84,34 +84,34 @@ mod speed_markets {
         let bump = &[bump][..];
         let current_timestamp = Clock::get()?.unix_timestamp;
         msg!("passed the requirements {}", &current_timestamp);
-        let winning_amount = ctx.accounts.speed_market.buy_in_amount;
+        let winning_amount = 2*ctx.accounts.speed_market.buy_in_amount;
         let mint_token = ctx.accounts.token_mint.key().clone();
         let user_from = ctx.accounts.user.key().clone();
         let wallet_to_withdraw_from = ctx.accounts.wallet_to_withdraw_from.key().clone();
         let wallet_to_deposit_to = ctx.accounts.wallet_to_deposit_to.key().clone();
-        // let inner = vec![
-        //     b"speed".as_ref(),
-        //     user_from.as_ref(),
-        //     mint_token.as_ref(),
-        //     // wallet_to_withdraw_from.as_ref(),
-        //     // wallet_to_deposit_to.as_ref(),
-        //     // strike_time_cloned.as_ref(),
-        //     // direction_cloned.as_ref(),
-        //     // buy_in_amount_cloned.as_ref(),
-        // ];
-        // let outer = vec![inner.as_slice()];
-        // let transfer_instruction = Transfer{
-        //     from: ctx.accounts.wallet_to_withdraw_from.to_account_info(),
-        //     to: ctx.accounts.wallet_to_deposit_to.to_account_info(),
-        //     authority: ctx.accounts.user.to_account_info(),
-        // };
-        
-        // let cpi_ctx = CpiContext::new_with_signer(
-        //     ctx.accounts.token_program.to_account_info(),
-        //     transfer_instruction,
-        //     outer.as_slice(),
-        // );
 
+        let inner = vec![
+            b"speed".as_ref(),
+            user_from.as_ref(),
+            mint_token.as_ref(),
+            wallet_to_withdraw_from.as_ref(),
+            wallet_to_deposit_to.as_ref(),
+        ];
+        let outer = vec![inner.as_slice()];
+        let transfer_instruction = Transfer{
+            from: ctx.accounts.wallet_to_withdraw_from.to_account_info(),
+            to: ctx.accounts.wallet_to_deposit_to.to_account_info(),
+            authority: ctx.accounts.speed_market.to_account_info(),
+        };
+        
+        let cpi_ctx = CpiContext::new_with_signer(
+            ctx.accounts.token_program.to_account_info(),
+            transfer_instruction,
+            outer.as_slice(),
+        );
+        msg!("winning amount {}", &winning_amount);
+        // msg!("winning amount {}", &ctx.accounts.speed_market.to_account_info());
+        // msg!("outer {}", &outer.as_slice());
         // anchor_spl::token::transfer(cpi_ctx, winning_amount)?;
         Ok(())
     }
