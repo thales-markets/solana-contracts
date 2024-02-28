@@ -21,6 +21,7 @@ mod speed_markets {
         market_requirements.min_amount = min_amount;
         market_requirements.max_amount = max_amount;
         market_requirements.safe_box_impact = safe_box_impact;
+        market_requirements.liquidity_wallet = ctx.accounts.liquidity_wallet.key();
         Ok(())
     }
 
@@ -205,7 +206,7 @@ pub enum Errors {
 
 #[derive(Accounts)]
 pub struct InitializeSpeedMarketRequirements<'info> {
-    #[account(init, payer = user, space = 64 + 40)]
+    #[account(init, payer = user, space = 8 + SpeedMarketRequirements::LEN)]
     pub market_requirements: Account<'info, SpeedMarketRequirements>,
     #[account(
         init,
@@ -319,6 +320,7 @@ pub struct SpeedMarketRequirements {
     pub min_amount: u64,
     pub max_amount: u64,
     pub safe_box_impact: u64,
+    pub liquidity_wallet: Pubkey,
 }
 
 #[account]
@@ -342,4 +344,7 @@ pub struct SpeedMarket {
 
 impl SpeedMarket {
     const LEN: usize = 1 + (4*32) + (3 * 8) + 1 + 1 + 8 + 1 + (3 * 8);
+}
+impl SpeedMarketRequirements {
+    const LEN: usize = 32+(5*8);
 }
