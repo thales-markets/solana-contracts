@@ -207,9 +207,25 @@ pub enum Errors {
 pub struct InitializeSpeedMarketRequirements<'info> {
     #[account(init, payer = user, space = 64 + 40)]
     pub market_requirements: Account<'info, SpeedMarketRequirements>,
+    #[account(
+        init,
+        payer = user,
+        seeds=[
+            b"liquidity".as_ref(), 
+            user.key().as_ref(),
+            token_mint.key().as_ref(),
+            ],
+        bump,
+        token::mint=token_mint,
+        token::authority=market_requirements,
+    )]
+    pub liquidity_wallet: Account<'info, TokenAccount>,
+    pub token_mint: Account<'info, Mint>,
     #[account(mut)]
     pub user: Signer<'info>,
     pub system_program: Program<'info, System>,
+    pub token_program: Program<'info, Token>,
+    pub rent: Sysvar<'info, Rent>,
 }
 
 #[derive(Accounts)]

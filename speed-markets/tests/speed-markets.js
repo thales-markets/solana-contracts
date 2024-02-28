@@ -372,6 +372,21 @@ describe("speed-markets", () => {
       const maxBuyInAmount = 100;
       const safeBoxImpact = 1;
 
+      const [liquidityWalletPDA, requirementsBump] =
+      await PublicKey.findProgramAddressSync(
+        [
+          anchor.utils.bytes.utf8.encode("liquidity"), 
+          provider.wallet.publicKey.toBuffer(),
+          mint.toBuffer(),
+        ],
+        program.programId
+      )
+
+      console.log("user: ", provider.wallet.publicKey.toString());
+      console.log("marketRequirementsAccount: ", marketRequirementsAccount.publicKey.toString());
+      console.log("liquidityWallet: ", liquidityWalletPDA.toString());
+      console.log("tokenMint: ", mint.toBase58());
+
       await program.rpc.initializeMarketRequirements(
         new anchor.BN(minStrikeTime), 
         new anchor.BN(maxStrikeTime), 
@@ -381,8 +396,12 @@ describe("speed-markets", () => {
         {
         accounts:{
           marketRequirements: marketRequirementsAccount.publicKey,
+          liquidityWallet: liquidityWalletPDA,
+          tokenMint: mint,
           user: provider.wallet.publicKey,
           systemProgram: SystemProgram.programId,
+          tokenProgram: TOKEN_PROGRAM_ID,
+          rent: anchor.web3.SYSVAR_RENT_PUBKEY,
         }, signers: [marketRequirementsAccount],
       });
 
@@ -519,6 +538,14 @@ describe("speed-markets", () => {
       console.log(txDetails2);
       console.log(txDetails2?.meta?.logMessages);
 
+      tokenAccountInfo = await getAccount(
+        provider.connection,
+        tokenAccount.address
+      );
+
+      console.log("User token amount before resolution: ", userTokenAmountAfterCreation);
+      console.log("User token amount after creation: ", tokenAccountInfo.amount);
+      console.log("Received: ",parseInt(tokenAccountInfo.amount.toString()) - parseInt(userTokenAmountAfterCreation.toString()))
     });
     
 
