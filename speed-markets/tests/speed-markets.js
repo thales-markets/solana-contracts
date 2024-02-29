@@ -287,6 +287,8 @@ describe("speed-markets", () => {
 
 
     it("Create a speed market", async () => {
+
+      
       let tokenAccountInfo = await getAccount(
         provider.connection,
         tokenAccount.address
@@ -299,6 +301,8 @@ describe("speed-markets", () => {
       const btcFeed = new PublicKey(
         "HovQMDrbAgAYPCmHVSrezcSmkMtXSSUsLDFANExrZh2J"
       );
+      console.log("PROVIDER ACCOUNT: ", provider.wallet);
+      console.log("MARKET REQUIREMENTS ACCOUNT: ", marketRequirementsAccount);
       console.log("provider acc: ", provider.wallet.publicKey.toString());
       console.log("toke mint: ", mint.toBase58());
       const userWalletPubkey = user_account.publicKey;

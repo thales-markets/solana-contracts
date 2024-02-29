@@ -128,35 +128,21 @@ mod speed_markets {
         let mint_token = ctx.accounts.token_mint.key().clone();
         let user_from = ctx.accounts.user.key().clone();
         let user_admin = ctx.accounts.user_admin.key().clone();
+        let market_requirements = ctx.accounts.market_requirements.key().clone();
+        // let user_admin = ctx.accounts.market_requirements.key().clone();
         let wallet_to_withdraw_from = ctx.accounts.wallet_to_withdraw_from.key().clone();
         let wallet_to_deposit_to = ctx.accounts.wallet_to_deposit_to.key().clone();
+        let liquid_wallet = ctx.accounts.liquid_wallet.key().clone();
         let escrow_wallet = ctx.accounts.speed_market.escrow_wallet.clone();
         let direction_cloned = ctx.accounts.speed_market.direction.to_le_bytes();
         let temp_bump = ctx.accounts.speed_market.bump.to_le_bytes();
         let liquid_bump = ctx.accounts.market_requirements.liquid_bump.to_le_bytes();
 
-        // let inner = vec![
-        //     b"speed".as_ref(),
-        //     user_from.as_ref(),
-        //     mint_token.as_ref(),
-        //     wallet_to_withdraw_from.as_ref(),
-        //     wallet_to_deposit_to.as_ref(),
-        // ];
-        // let outer = vec![inner.as_slice()];
-        // let transfer_instruction = Transfer{
-        //     from: ctx.accounts.wallet_to_withdraw_from.to_account_info(),
-        //     to: ctx.accounts.wallet_to_deposit_to.to_account_info(),
-        //     authority: ctx.accounts.speed_market.to_account_info(),
-        // };
-        
-        // let cpi_ctx = CpiContext::new_with_signer(
-        //     ctx.accounts.token_program.to_account_info(),
-        //     transfer_instruction,
-        //     outer.as_slice(),
-        // );
-
         msg!("user {}", user_from);
+        msg!("user_admin {}", user_admin);
+        msg!("market_requirements {}", market_requirements);
         msg!("mint token {}", mint_token);
+        msg!("liquid_wallet {}", liquid_wallet);
         msg!("escrow_wallet {}", escrow_wallet);
         msg!("wallet_from {}", wallet_to_withdraw_from);
         msg!("wallet_to {}", wallet_to_deposit_to);
