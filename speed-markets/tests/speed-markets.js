@@ -377,6 +377,7 @@ describe("speed-markets", () => {
         [
           anchor.utils.bytes.utf8.encode("liquidity"), 
           provider.wallet.publicKey.toBuffer(),
+          // marketRequirementsAccount.publicKey.toBuffer(),
           mint.toBuffer(),
         ],
         program.programId
@@ -404,6 +405,30 @@ describe("speed-markets", () => {
           rent: anchor.web3.SYSVAR_RENT_PUBKEY,
         }, signers: [marketRequirementsAccount],
       });
+
+      let liquidityWalletAccount = await getAccount(
+        provider.connection,
+        liquidityWalletPDA
+      );
+      console.log("Market requirements public key: ", marketRequirementsAccount.publicKey.toString());
+      console.log("Liquidity wallet account owner: ", liquidityWalletAccount.owner.toString());
+      console.log("Liquidity wallet account: ", liquidityWalletAccount);
+
+      signature = await transfer(
+        provider.connection,
+        user_account,
+        tokenAccount.address,
+        liquidityWalletPDA,
+        user_account.publicKey,
+        50
+      );
+
+      liquidityWalletAccount = await getAccount(
+        provider.connection,
+        liquidityWalletPDA
+      );
+
+      console.log("Liquidity wallet account after transfer: ", liquidityWalletAccount);
 
       console.log("Debug: ________ \n");
       console.log("marketReq: ", marketRequirementsAccount.publicKey.toString());
@@ -518,16 +543,19 @@ describe("speed-markets", () => {
         speedMarketBump, 
         {
         accounts:{
+          marketRequirements: marketRequirementsAccount.publicKey,
           user: user_account.publicKey,
+          userAdmin: marketRequirementsAccount.publicKey,
           speedMarket: speedMarketPDA,
           tokenMint: mint,
           walletToDepositTo: tokenAccount.address,
           walletToWithdrawFrom: speedMarketWalletPDA,
+          liquidWallet: liquidityWalletPDA,
           systemProgram: SystemProgram.programId,
           tokenProgram: TOKEN_PROGRAM_ID,
           rent: anchor.web3.SYSVAR_RENT_PUBKEY,
         },
-        signers: [user_account],
+        signers: [user_account, marketRequirementsAccount],
       });
       console.log("resolve tx: ", create_tx);
       await delay(5000);
