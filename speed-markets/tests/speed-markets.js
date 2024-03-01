@@ -333,7 +333,7 @@ describe("speed-markets", () => {
         await PublicKey.findProgramAddressSync(
           [
             anchor.utils.bytes.utf8.encode("speed"), 
-            user_account.publicKey.toBuffer(),
+            // user_account.publicKey.toBuffer(),
             mint.toBuffer(),
             directionUp.toBuffer(), 
             // buyInAmount.toBuffer(),
@@ -351,7 +351,7 @@ describe("speed-markets", () => {
         await PublicKey.findProgramAddressSync(
           [
             anchor.utils.bytes.utf8.encode("wallet"), 
-            user_account.publicKey.toBuffer(),
+            // user_account.publicKey.toBuffer(),
             mint.toBuffer(),
             directionUp.toBuffer(), 
             // marketStrikeTime.toBuffer(), 
@@ -380,7 +380,17 @@ describe("speed-markets", () => {
       await PublicKey.findProgramAddressSync(
         [
           anchor.utils.bytes.utf8.encode("liquidity"), 
-          provider.wallet.publicKey.toBuffer(),
+          // provider.wallet.publicKey.toBuffer(),
+          // marketRequirementsAccount.publicKey.toBuffer(),
+          mint.toBuffer(),
+        ],
+        program.programId
+      )
+      const [marketRequirementsPDA, ] =
+      await PublicKey.findProgramAddressSync(
+        [
+          anchor.utils.bytes.utf8.encode("speedrequirements"), 
+          // provider.wallet.publicKey.toBuffer(),
           // marketRequirementsAccount.publicKey.toBuffer(),
           mint.toBuffer(),
         ],
@@ -400,14 +410,17 @@ describe("speed-markets", () => {
         new anchor.BN(safeBoxImpact),
         {
         accounts:{
-          marketRequirements: marketRequirementsAccount.publicKey,
+          // marketRequirements: marketRequirementsAccount.publicKey,
+          marketRequirements: marketRequirementsPDA,
           liquidityWallet: liquidityWalletPDA,
           tokenMint: mint,
           user: provider.wallet.publicKey,
           systemProgram: SystemProgram.programId,
           tokenProgram: TOKEN_PROGRAM_ID,
           rent: anchor.web3.SYSVAR_RENT_PUBKEY,
-        }, signers: [marketRequirementsAccount],
+        }, 
+        // signers: [marketRequirementsAccount],
+        signers: [provider.wallet.payer],
       });
 
       let liquidityWalletAccount = await getAccount(
@@ -454,7 +467,7 @@ describe("speed-markets", () => {
           directionUp, 
           buyInAmount, {
           accounts:{
-            marketRequirements: marketRequirementsAccount.publicKey,
+            marketRequirements: marketRequirementsPDA,
             user: user_account.publicKey,
             speedMarket: speedMarketPDA,
             speedMarketWallet: speedMarketWalletPDA,
@@ -547,8 +560,8 @@ describe("speed-markets", () => {
         speedMarketBump, 
         {
         accounts:{
-          marketRequirements: marketRequirementsAccount.publicKey,
-          user: user_account.publicKey,
+          marketRequirements: marketRequirementsPDA,
+          user: provider.wallet.publicKey,
           userAdmin: marketRequirementsAccount.publicKey,
           speedMarket: speedMarketPDA,
           tokenMint: mint,
@@ -559,7 +572,8 @@ describe("speed-markets", () => {
           tokenProgram: TOKEN_PROGRAM_ID,
           rent: anchor.web3.SYSVAR_RENT_PUBKEY,
         },
-        signers: [user_account, marketRequirementsAccount],
+        // signers: [user_account, marketRequirementsAccount],
+        signers: [provider.wallet.payer],
       });
       console.log("resolve tx: ", create_tx);
       await delay(5000);
