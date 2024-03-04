@@ -1,7 +1,6 @@
 use anchor_lang::prelude::*;
 use std::str::FromStr;
 use std::str;
-use anchor_spl::associated_token::AssociatedToken;
 use anchor_spl::token::{self, CloseAccount, Mint, Token, TokenAccount, TransferChecked, Transfer};
 
 declare_id!("EfscCNT9ERcPjNatjatcJRsuWLjqo5jSngbbS4Yim1i");
@@ -28,16 +27,12 @@ mod speed_markets {
         Ok(())
     }
 
-    // pub fn create_speed_market(ctx: Context<CreateSpeedMarket>, bump: u8, asset: str, strikeTime: u64, direction: u8, buyInAmount: u64, skewImpact: u64) -> Result<()> {
-    pub fn create_speed_market(ctx: Context<CreateSpeedMarket>, bump: u8, wallet_bump: u8, strike_time: i64, direction: u8, buy_in_amount: u64) -> Result<()> {
-        let bump = &[bump][..];
-        let wallet_bump = &[wallet_bump][..];
+    pub fn create_speed_market(ctx: Context<CreateSpeedMarket>, strike_time: i64, direction: u8, buy_in_amount: u64) -> Result<()> {
         let current_timestamp = Clock::get()?.unix_timestamp;
         msg!("current timestamp {}", &current_timestamp);
         require!(strike_time > current_timestamp, Errors::StrikeTimeInThePast);
         require!(direction <= 1 , Errors::DirectionError);
         require!((strike_time - current_timestamp) >= ctx.accounts.market_requirements.min_strike_timestamp && (strike_time - current_timestamp) <= ctx.accounts.market_requirements.max_strike_timestamp , Errors::MinMaxStrikeExceeded);
-        // require!(strike_time <= max_strike, Errors::StrikeTimeInThePast);
         let speed_market = &mut ctx.accounts.speed_market;
         speed_market.created_at = current_timestamp;
         speed_market.strike_time = strike_time;
@@ -51,19 +46,16 @@ mod speed_markets {
         speed_market.token_mint = ctx.accounts.token_mint.key();
         speed_market.escrow_wallet = ctx.accounts.speed_market_wallet.key();
         speed_market.bump = ctx.bumps.speed_market;
-        // require!(speed_market.user.key() == Pubkey::from_str(BTC_USDC_FEED).unwrap() , Errors::DirectionError);
         require!(ctx.accounts.price_feed.key() == Pubkey::from_str(BTC_USDC_FEED).unwrap() || ctx.accounts.price_feed.key() == Pubkey::from_str(ETH_USDC_FEED).unwrap() , Errors::InvalidPriceFeed);
         speed_market.user = ctx.accounts.user.key();
         let mint_token = ctx.accounts.token_mint.key().clone();
         let user_from = ctx.accounts.user.key().clone();
-        let strike_time_cloned = strike_time.to_le_bytes();
-        let buy_in_amount_cloned = buy_in_amount.to_le_bytes();
+        // let strike_time_cloned = strike_time.to_le_bytes();
+        // let buy_in_amount_cloned = buy_in_amount.to_le_bytes();
         let direction_cloned = direction.to_le_bytes();
         let temp_bump = speed_market.bump.to_le_bytes();
         msg!("user {}", user_from);
         msg!("mint token {}", mint_token);
-        // msg!("direction {}", str::from_utf8(direction_cloned.as_ref()).unwrap());
-        // msg!("bump {}", str::from_utf8(temp_bump.as_ref()).unwrap());
 
         let binding = &[
                     SPEED_SEED.as_ref(), 
@@ -72,32 +64,6 @@ mod speed_markets {
                     direction_cloned.as_ref(),
                     temp_bump.as_ref()
                     ];
-        let inner = vec![
-            b"speed".as_ref(),
-            user_from.as_ref(),
-            mint_token.as_ref(),
-            direction_cloned.as_ref(),
-            temp_bump.as_ref()
-            // strike_time_cloned.as_ref(),
-            // buy_in_amount_cloned.as_ref(),
-            // &[speed_market.bump][..]
-            // &[*ctx.bumps.get("speed_market").unwrap()]
-        ];
-        let outer = vec![inner.as_slice()];
-        
-        // let transfer_instruction = Transfer{
-        //     from: ctx.accounts.wallet_to_withdraw_from.to_account_info(),
-        //     to: ctx.accounts.speed_market_wallet.to_account_info(),
-        //     authority: ctx.accounts.user.to_account_info(),
-        // };
-        
-        // let cpi_ctx = CpiContext::new_with_signer(
-        //     ctx.accounts.token_program.to_account_info(),
-        //     transfer_instruction,
-        //     // outer.as_slice(),
-        //     &[binding.as_ref()],
-        //     // &[&[SPEED_SEED.as_ref(), &[bumps.to_le_bytes()[0]]]],
-        // );
 
         token::transfer(
             CpiContext::new(
@@ -109,28 +75,21 @@ mod speed_markets {
                 },
             )
             .with_signer(&[&binding[..]]),
-            // .with_signer(outer.as_slice()),
             buy_in_amount,
         )?;
     
 
         msg!("After sending tx");
         msg!("Buy in amount: \n{}", &buy_in_amount);
-        // msg!("Cpi context: \n{:#?}", &ctx.accounts.speed_market_wallet.to_account_info());
-        // anchor_spl::token::transfer(cpi_ctx, buy_in_amount)?;
         Ok(())
     }
     
-    pub fn resolve_speed_market(ctx: Context<ResolveSpeedMarket>, bump: u8 ) -> Result<()> {
-        let bump = &[bump][..];
+    pub fn resolve_speed_market(ctx: Context<ResolveSpeedMarket>) -> Result<()> {
         let current_timestamp = Clock::get()?.unix_timestamp;
         msg!("passed the requirements {}", &current_timestamp);
         let winning_amount = ctx.accounts.speed_market.buy_in_amount/2;
         let mint_token = ctx.accounts.token_mint.key().clone();
-        // let user_from = ctx.accounts.user.key().clone();
-        // let user_admin = ctx.accounts.user_admin.key().clone();
         let market_requirements = ctx.accounts.market_requirements.key().clone();
-        // let user_admin = ctx.accounts.market_requirements.key().clone();
         let wallet_to_withdraw_from = ctx.accounts.wallet_to_withdraw_from.key().clone();
         let wallet_to_deposit_to = ctx.accounts.wallet_to_deposit_to.key().clone();
         let liquid_wallet = ctx.accounts.liquid_wallet.key().clone();
@@ -139,20 +98,14 @@ mod speed_markets {
         let temp_bump = ctx.accounts.speed_market.bump.to_le_bytes();
         let liquid_bump = ctx.accounts.market_requirements.liquid_bump.to_le_bytes();
 
-        // msg!("user {}", user_from);
-        // msg!("user_admin {}", user_admin);
         msg!("market_requirements {}", market_requirements);
         msg!("mint token {}", mint_token);
         msg!("liquid_wallet {}", liquid_wallet);
         msg!("escrow_wallet {}", escrow_wallet);
         msg!("wallet_from {}", wallet_to_withdraw_from);
         msg!("wallet_to {}", wallet_to_deposit_to);
-        // msg!("direction {}", str::from_utf8(&direction_cloned).unwrap());
-        // msg!("bump {}", str::from_utf8(&temp_bump).unwrap());
-
 
         let liquid_binding = &[
-                    // LIQUID_SEED.as_ref(), 
                     MARKET_REQ_SEED.as_ref(), 
                     // user_admin.as_ref(),
                     mint_token.as_ref(),
@@ -169,7 +122,6 @@ mod speed_markets {
                 },
             )
             .with_signer(&[&liquid_binding[..]]),
-            // .with_signer(outer.as_slice()),
             winning_amount,
         )?;
 
@@ -191,15 +143,11 @@ mod speed_markets {
                 },
             )
             .with_signer(&[&binding[..]]),
-            // .with_signer(outer.as_slice()),
             winning_amount,
         )?;
         
         
         msg!("winning amount {}", &winning_amount);
-        // msg!("winning amount {}", &ctx.accounts.speed_market.to_account_info());
-        // msg!("outer {}", &outer.as_slice());
-        // anchor_spl::token::transfer(cpi_ctx, winning_amount)?;
         Ok(())
     }
     
@@ -219,18 +167,12 @@ pub enum Errors {
 
 #[derive(Accounts)]
 pub struct InitializeSpeedMarketRequirements<'info> {
-    // #[account(init, payer = user, space = 8 + SpeedMarketRequirements::LEN)]
-    // pub market_requirements: Account<'info, SpeedMarketRequirements>,
     #[account(
         init,
         seeds = [
-            // b"speed".as_ref(),
             MARKET_REQ_SEED.as_ref(),
             // user.key().as_ref(),
             token_mint.key().as_ref(),
-            // direction.to_le_bytes().as_ref(),
-            // strike_time.to_le_bytes().as_ref(),
-            // buy_in_amount.to_be_bytes().as_ref(),
             ],
             bump,
             payer = user,
@@ -243,7 +185,6 @@ pub struct InitializeSpeedMarketRequirements<'info> {
         seeds=[
             // b"liquidity".as_ref(), 
             LIQUID_SEED.as_ref(),
-            // user.key().as_ref(),
             token_mint.key().as_ref(),
             ],
         bump,
@@ -265,13 +206,10 @@ pub struct CreateSpeedMarket<'info> {
     #[account(
         init,
         seeds = [
-            // b"speed".as_ref(),
             SPEED_SEED.as_ref(),
             // user.key().as_ref(),
             token_mint.key().as_ref(),
             direction.to_le_bytes().as_ref(),
-            // strike_time.to_le_bytes().as_ref(),
-            // buy_in_amount.to_be_bytes().as_ref(),
             ],
             bump,
             payer = user,
@@ -323,8 +261,6 @@ pub struct ResolveSpeedMarket<'info> {
     
     #[account(mut)]
     pub user: Signer<'info>,
-    // #[account(mut)]
-    // pub user_admin: Signer<'info>,
 
     pub token_mint: Account<'info, Mint>,
     
