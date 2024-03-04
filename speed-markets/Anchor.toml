@@ -7,11 +7,14 @@ skip-lint = false
 [programs.localnet]
 speed_markets = "FnBCKHhKz9KtpqWkWRvfQrWrr8Hs4kbtYE7aTp75F4vj"
 
+[programs.devnet]
+speed_markets = "EfscCNT9ERcPjNatjatcJRsuWLjqo5jSngbbS4Yim1i"
+
 [registry]
 url = "https://api.apr.dev"
 
 [provider]
-cluster = "Localnet"
+cluster = "devnet"
 wallet = "/home/kiril/.config/solana/id.json"
 
 [scripts]

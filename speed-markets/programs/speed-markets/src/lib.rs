@@ -1,4 +1,7 @@
 use anchor_lang::prelude::*;
+
+use pyth_sdk_solana::{load_price_feed_from_account_info};
+
 use std::str::FromStr;
 use std::str;
 use anchor_spl::token::{self, CloseAccount, Mint, Token, TokenAccount, TransferChecked, Transfer};
@@ -10,6 +13,7 @@ const ETH_USDC_FEED: &str = "EdVCmQ9FSPcVe5YySXDPCRmc8aDQLKJ9xvYBMZPie1Vw";
 const SPEED_SEED: &[u8] = b"speed";
 const LIQUID_SEED: &[u8] = b"liquidity";
 const MARKET_REQ_SEED: &[u8] = b"speedrequirements";
+const STALENESS_THRESHOLD: u64 = 1000;
 
 #[program]
 mod speed_markets {
@@ -28,6 +32,7 @@ mod speed_markets {
     }
 
     pub fn create_speed_market(ctx: Context<CreateSpeedMarket>, strike_time: i64, direction: u8, buy_in_amount: u64) -> Result<()> {
+        
         let current_timestamp = Clock::get()?.unix_timestamp;
         msg!("current timestamp {}", &current_timestamp);
         require!(strike_time > current_timestamp, Errors::StrikeTimeInThePast);
@@ -46,8 +51,20 @@ mod speed_markets {
         speed_market.token_mint = ctx.accounts.token_mint.key();
         speed_market.escrow_wallet = ctx.accounts.speed_market_wallet.key();
         speed_market.bump = ctx.bumps.speed_market;
-        require!(ctx.accounts.price_feed.key() == Pubkey::from_str(BTC_USDC_FEED).unwrap() || ctx.accounts.price_feed.key() == Pubkey::from_str(ETH_USDC_FEED).unwrap() , Errors::InvalidPriceFeed);
         speed_market.user = ctx.accounts.user.key();
+        require!(ctx.accounts.price_feed.key() == Pubkey::from_str(BTC_USDC_FEED).unwrap() || ctx.accounts.price_feed.key() == Pubkey::from_str(ETH_USDC_FEED).unwrap() , Errors::InvalidPriceFeed);
+
+        let price_account_info = &ctx.accounts.price_feed;
+        let price_account_info_string = ctx.accounts.price_feed.key().clone();
+        let price_feed = load_price_feed_from_account_info( &price_account_info ).unwrap();
+        let current_price = price_feed
+            .get_price_no_older_than(current_timestamp, STALENESS_THRESHOLD)
+            .unwrap();
+        let display_price = u64::try_from(current_price.price).unwrap()
+        / 10u64.pow(u32::try_from(-current_price.expo).unwrap());
+        msg!("price {}", display_price);
+
+        
         let mint_token = ctx.accounts.token_mint.key().clone();
         let user_from = ctx.accounts.user.key().clone();
         // let strike_time_cloned = strike_time.to_le_bytes();
@@ -56,6 +73,7 @@ mod speed_markets {
         let temp_bump = speed_market.bump.to_le_bytes();
         msg!("user {}", user_from);
         msg!("mint token {}", mint_token);
+        msg!("btc feed {}", price_account_info_string);
 
         let binding = &[
                     SPEED_SEED.as_ref(), 
@@ -77,10 +95,7 @@ mod speed_markets {
             .with_signer(&[&binding[..]]),
             buy_in_amount,
         )?;
-    
 
-        msg!("After sending tx");
-        msg!("Buy in amount: \n{}", &buy_in_amount);
         Ok(())
     }
     
@@ -197,7 +212,6 @@ pub struct InitializeSpeedMarketRequirements<'info> {
     pub user: Signer<'info>,
     pub system_program: Program<'info, System>,
     pub token_program: Program<'info, Token>,
-    pub rent: Sysvar<'info, Rent>,
 }
 
 #[derive(Accounts)]
@@ -244,12 +258,16 @@ pub struct CreateSpeedMarket<'info> {
     
     #[account(mut)]
     pub market_requirements: Account<'info, SpeedMarketRequirements>,
-    #[account(mut)]
+    
+    #[account(address = Pubkey::from_str(BTC_USDC_FEED).unwrap() @ Errors::InvalidPriceFeed)]
     /// CHECK: checked in the implementation
     pub price_feed: AccountInfo<'info>,
+    // #[account(mut)]
+    // /// CHECK: checked in the implementation
+    // pub price_feed: Account<'info, PriceFeed>,
+    // pub price_feed: AccountInfo<'info,>,
     pub system_program: Program<'info, System>,
     pub token_program: Program<'info, Token>,
-    pub rent: Sysvar<'info, Rent>,
 }
 
 #[derive(Accounts)]
@@ -286,7 +304,6 @@ pub struct ResolveSpeedMarket<'info> {
 
     pub system_program: Program<'info, System>,
     pub token_program: Program<'info, Token>,
-    pub rent: Sysvar<'info, Rent>,
 }
 
 
