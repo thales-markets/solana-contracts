@@ -102,6 +102,7 @@ describe("speed-markets", () => {
       const userWalletPubkey = user_account.publicKey;
       let now = parseInt(Date.now()/1000);
       const marketStrikeTime = new anchor.BN(parseInt(now + 100)); // 100 seconds in future
+      const strikePrice = new anchor.BN(67000); // BTC price
       const marketStrikeTimeUtf8 = marketStrikeTime.toBuffer('le', 8);
       const directionUp = new anchor.BN(0);
       const directionUpUtf8 = directionUp.toBuffer('le', 8);
@@ -126,17 +127,10 @@ describe("speed-markets", () => {
       const [speedMarketPDA, speedMarketBump] =
         await PublicKey.findProgramAddressSync(
           [
-            anchor.utils.bytes.utf8.encode("speed"), 
-            // user_account.publicKey.toBuffer(),
+            anchor.utils.bytes.utf8.encode("speedmarket"),
+            buyInAmount.toArrayLike(Buffer, "le", 8),
+            marketStrikeTime.toArrayLike(Buffer, "le", 8),
             mint.toBuffer(),
-            directionUp.toBuffer(), 
-            // buyInAmount.toBuffer(),
-            // buyInAmount.toArrayLike(Buffer, "le", 8)
-            // buyInAmount.toBuffer(),
-            // marketStrikeTime.toBuffer(), 
-            // directionUpUtf8
-            // anchor.utils.bytes.utf8.encode(directionUp.toString()),
-            // anchor.utils.bytes.utf8.encode(mint.toBase58()), 
           ],
           program.programId
         );
@@ -144,17 +138,11 @@ describe("speed-markets", () => {
       const [speedMarketWalletPDA, speedMarketWalletBump] =
         await PublicKey.findProgramAddressSync(
           [
-            anchor.utils.bytes.utf8.encode("wallet"), 
+            anchor.utils.bytes.utf8.encode("wallet"),
             // user_account.publicKey.toBuffer(),
+            buyInAmount.toArrayLike(Buffer, "le", 8),
+            marketStrikeTime.toArrayLike(Buffer, "le", 8),
             mint.toBuffer(),
-            directionUp.toBuffer(), 
-            // marketStrikeTime.toBuffer(), 
-            // buyInAmount.toBuffer(),
-            // directionUpUtf8,
-            // anchor.utils.bytes.utf8.encode(directionUp),
-            // marketStrikeTime.toBuffer(), 
-            // directionUp.toBuffer('le', 8), 
-            // buyInAmount.toBuffer('le', 8)
           ],
           program.programId
         )
@@ -257,7 +245,9 @@ describe("speed-markets", () => {
         create_tx = await program.rpc.createSpeedMarket(
           marketStrikeTime, 
           directionUp, 
-          buyInAmount, {
+          buyInAmount,
+          strikePrice,
+          {
           accounts:{
             marketRequirements: marketRequirementsPDA,
             // user: user_account.publicKey,
@@ -280,7 +270,7 @@ describe("speed-markets", () => {
         throw err;
       }
 
-      await delay(5000);
+      await delay(10000);
 
       const txDetails = await provider.connection.getTransaction(create_tx, {
           maxSupportedTransactionVersion: 0,
@@ -293,95 +283,96 @@ describe("speed-markets", () => {
       if (!logs) {
         console.log("No logs found");
       }
-    //   const tokenAccounts = await provider.connection.getTokenAccountsByOwner(
-    //     tokenAccount.address, {
-    //       mint
-    //     }
-    //   );
+      const tokenAccounts = await provider.connection.getTokenAccountsByOwner(
+        tokenAccount.address, {
+          mint
+        }
+      );
       
       
 
-    //   console.log(tokenAccounts);
+      console.log(tokenAccounts);
 
-    //   console.log(logs);
-    //   tokenAccountInfo = await getAccount(
-    //     provider.connection,
-    //     tokenAccount.address
-    //   );
-    //   console.log(tokenAccountInfo);
-    //   let walletAccountInfo = await getAccount(
-    //     provider.connection,
-    //     speedMarketWalletPDA
-    //   );
-    //   let speedMarketWallet = walletAccountInfo.amount;
-    //   let userTokenAmountAfterCreation = tokenAccountInfo.amount;
-    //   let deposited = parseInt(userTokenAmountBeforeCreation.toString()) - parseInt(userTokenAmountAfterCreation.toString());
-    //   console.log("Balance in new speed market wallet: ", speedMarketWallet.toString());
-    //   console.log("User token amount before creation: ", userTokenAmountBeforeCreation.toString());
-    //   console.log("User token amount after creation: ", userTokenAmountAfterCreation.toString());
-    //   console.log("Deposited: ", deposited);
+      console.log(logs);
+      tokenAccountInfo = await getAccount(
+        provider.connection,
+        tokenAccount.address
+      );
+      console.log(tokenAccountInfo);
+      let walletAccountInfo = await getAccount(
+        provider.connection,
+        speedMarketWalletPDA
+      );
+      let speedMarketWallet = walletAccountInfo.amount;
+      let userTokenAmountAfterCreation = tokenAccountInfo.amount;
+      let deposited = parseInt(userTokenAmountBeforeCreation.toString()) - parseInt(userTokenAmountAfterCreation.toString());
+      console.log("Balance in new speed market wallet: ", speedMarketWallet.toString());
+      console.log("User token amount before creation: ", userTokenAmountBeforeCreation.toString());
+      console.log("User token amount after creation: ", userTokenAmountAfterCreation.toString());
+      console.log("Deposited: ", deposited);
 
-    //   assert(deposited.toString(), buyInAmount.toString(), "Amount spent on speed market does not match");
-    //   assert(deposited.toString(), speedMarketWallet.toString(), "Deposited amount does not match");
+      assert(deposited.toString(), buyInAmount.toString(), "Amount spent on speed market does not match");
+      assert(deposited.toString(), speedMarketWallet.toString(), "Deposited amount does not match");
       
-    //   let speedMarketObj = await program.account.speedMarket.fetch(speedMarketPDA);
-    //   // let speedMarketObj = program;
-    //   console.log("\n\n\n SpeedMarket created: ");
-    //   console.log("user: ", speedMarketObj.user.toString());
-    //   console.log("tokenMint: ", speedMarketObj.tokenMint.toString());
-    //   console.log("escrowWallet: ", speedMarketObj.escrowWallet.toString());
-    //   console.log("asset: ", speedMarketObj.asset.toString());
-    //   console.log("strikeTime: ", speedMarketObj.strikeTime.toString());
-    //   console.log("strikePrice: ", speedMarketObj.strikePrice.toString());
-    //   console.log("finalPrice: ", speedMarketObj.finalPrice.toString());
-    //   console.log("direction: ", speedMarketObj.direction.toString());
-    //   console.log("buyInAmount: ", speedMarketObj.buyInAmount.toString());
-    //   console.log("resolved: ", speedMarketObj.resolved);
-    //   console.log("lpFee: ", speedMarketObj.lpFee.toString());
-    //   console.log("createdAt: ", speedMarketObj.createdAt.toString());
+      let speedMarketObj = await program.account.speedMarket.fetch(speedMarketPDA);
+      // let speedMarketObj = program;
+      console.log("\n\n\n SpeedMarket created: ");
+      console.log("user: ", speedMarketObj.user.toString());
+      console.log("tokenMint: ", speedMarketObj.tokenMint.toString());
+      console.log("escrowWallet: ", speedMarketObj.escrowWallet.toString());
+      console.log("asset: ", speedMarketObj.asset.toString());
+      console.log("strikeTime: ", speedMarketObj.strikeTime.toString());
+      console.log("strikePrice: ", speedMarketObj.strikePrice.toString());
+      console.log("finalPrice: ", speedMarketObj.finalPrice.toString());
+      console.log("direction: ", speedMarketObj.direction.toString());
+      console.log("buyInAmount: ", speedMarketObj.buyInAmount.toString());
+      console.log("resolved: ", speedMarketObj.resolved);
+      console.log("lpFee: ", speedMarketObj.lpFee.toString());
+      console.log("createdAt: ", speedMarketObj.createdAt.toString());
 
-    //   const escrowWallet = await getAccount(
-    //     provider.connection,
-    //     speedMarketObj.escrowWallet
-    //   );
-    //   console.log(escrowWallet);
+      const escrowWallet = await getAccount(
+        provider.connection,
+        speedMarketObj.escrowWallet
+      );
+      console.log(escrowWallet);
 
-    //   // RESOLVE ATTEMPTS
+      // RESOLVE ATTEMPTS
       
-    //   let resolve_tx = await program.rpc.resolveSpeedMarket(
-    //     {
-    //     accounts:{
-    //       marketRequirements: marketRequirementsPDA,
-    //       user: provider.wallet.publicKey,
-    //       userAdmin: marketRequirementsAccount.publicKey,
-    //       speedMarket: speedMarketPDA,
-    //       tokenMint: mint,
-    //       walletToDepositTo: tokenAccount.address,
-    //       walletToWithdrawFrom: speedMarketWalletPDA,
-    //       liquidWallet: liquidityWalletPDA,
-    //       systemProgram: SystemProgram.programId,
-    //       tokenProgram: TOKEN_PROGRAM_ID,
-    //     },
-    //     // signers: [user_account, marketRequirementsAccount],
-    //     signers: [provider.wallet.payer],
-    //   });
-    //   console.log("resolve tx: ", create_tx);
-    //   await delay(5000);
-    //   const txDetails2 = await provider.connection.getTransaction(resolve_tx, {
-    //     maxSupportedTransactionVersion: 0,
-    //     commitment: "confirmed",
-    //   });
-    //   console.log(txDetails2);
-    //   console.log(txDetails2?.meta?.logMessages);
+      let resolve_tx = await program.rpc.resolveSpeedMarket(
+        {
+        accounts:{
+          marketRequirements: marketRequirementsPDA,
+          user: provider.wallet.publicKey,
+          userAdmin: marketRequirementsAccount.publicKey,
+          speedMarket: speedMarketPDA,
+          tokenMint: mint,
+          walletToDepositTo: tokenAccount.address,
+          walletToWithdrawFrom: speedMarketWalletPDA,
+          liquidWallet: liquidityWalletPDA,
+          priceFeed: btcFeed,
+          systemProgram: SystemProgram.programId,
+          tokenProgram: TOKEN_PROGRAM_ID,
+        },
+        // signers: [user_account, marketRequirementsAccount],
+        signers: [provider.wallet.payer],
+      });
+      console.log("resolve tx: ", create_tx);
+      await delay(5000);
+      const txDetails2 = await provider.connection.getTransaction(resolve_tx, {
+        maxSupportedTransactionVersion: 0,
+        commitment: "confirmed",
+      });
+      console.log(txDetails2);
+      console.log(txDetails2?.meta?.logMessages);
 
-    //   tokenAccountInfo = await getAccount(
-    //     provider.connection,
-    //     tokenAccount.address
-    //   );
+      tokenAccountInfo = await getAccount(
+        provider.connection,
+        tokenAccount.address
+      );
 
-    //   console.log("User token amount before resolution: ", userTokenAmountAfterCreation);
-    //   console.log("User token amount after creation: ", tokenAccountInfo.amount);
-    //   console.log("Received: ",parseInt(tokenAccountInfo.amount.toString()) - parseInt(userTokenAmountAfterCreation.toString()))
+      console.log("User token amount before resolution: ", userTokenAmountAfterCreation);
+      console.log("User token amount after creation: ", tokenAccountInfo.amount);
+      console.log("Received: ",parseInt(tokenAccountInfo.amount.toString()) - parseInt(userTokenAmountAfterCreation.toString()))
     
     });
     

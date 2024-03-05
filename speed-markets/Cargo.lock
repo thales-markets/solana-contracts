@@ -2032,10 +2032,8 @@ dependencies = [
 name = "speed-markets"
 version = "0.1.0"
 dependencies = [
- "ahash 0.8.4",
  "anchor-lang",
  "anchor-spl",
- "pyth-sdk",
  "pyth-sdk-solana",
 ]
 
