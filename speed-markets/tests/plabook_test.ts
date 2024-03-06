@@ -120,6 +120,15 @@ describe("Test", () => {
       ],
       pg.program.programId
     );
+    
+    const [safeBoxWalletPDA] = web3.PublicKey.findProgramAddressSync(
+      [
+        anchor.utils.bytes.utf8.encode("safebox"),
+        // user_account.publicKey.toBuffer(),
+        mint.toBuffer(),
+      ],
+      pg.program.programId
+    );
 
     const [marketRequirementsPDA] = web3.PublicKey.findProgramAddressSync(
       [
@@ -151,6 +160,7 @@ describe("Test", () => {
       .accounts({
         marketRequirements: marketRequirementsPDA,
         liquidityWallet: liquidityWalletPDA,
+        safeBoxWallet: safeBoxWalletPDA,
         tokenMint: mint,
         user: pg.wallet.publicKey,
         systemProgram: web3.SystemProgram.programId,
@@ -167,6 +177,10 @@ describe("Test", () => {
     await pg.connection.confirmTransaction(txInitMarketRequirements);
 
     let liquidityWalletAccount = await getAccount(
+      pg.connection,
+      liquidityWalletPDA
+    );
+    let safeBoxWalletAccount = await getAccount(
       pg.connection,
       liquidityWalletPDA
     );
@@ -227,6 +241,7 @@ describe("Test", () => {
         speedMarketWallet: speedMarketWalletPDA,
         tokenMint: mint,
         walletToWithdrawFrom: tokenAccount.address,
+        safeBoxWallet: safeBoxWalletPDA,
         priceFeed: btcFeed,
         systemProgram: web3.SystemProgram.programId,
         tokenProgram: TOKEN_PROGRAM_ID,
