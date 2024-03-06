@@ -35,6 +35,9 @@ OR go to Wallet (top right corner -> left (...) menu -> airdrop)
 Main logic in:  
 `speed-markets/program/speed-markets/src/lib.rs`
 
+Installing packages in:  
+`speed-markets/program/speed-markets/src/Cargo.toml`
+
 Main tests in:  
 `speed-markets/tests/speed-markets_devnet.js`
 
