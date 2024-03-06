@@ -6,7 +6,7 @@ use anchor_spl::token::{self, CloseAccount, Mint, Token, TokenAccount, Transfer,
 use std::str;
 use std::str::FromStr;
 
-declare_id!("D1brmZpeEvv9FJMPqvoLW77YuKSP4eiogSDTsZ4yWWxU");
+declare_id!("DSVREgjdfRaPTJ37MYBKyvZ3T1jzjjYZKDyTymvVacne");
 
 const BTC_USDC_FEED: &str = "HovQMDrbAgAYPCmHVSrezcSmkMtXSSUsLDFANExrZh2J";
 const ETH_USDC_FEED: &str = "EdVCmQ9FSPcVe5YySXDPCRmc8aDQLKJ9xvYBMZPie1Vw";
@@ -67,7 +67,7 @@ mod speed_markets {
             Errors::InvalidPriceFeed
         );
 
-        let price_account_info = &ctx.accounts.price_feed;
+        let price_account_info = &ctx.accounts.price_feed.to_account_info();
         let price_feed = load_price_feed_from_account_info( &price_account_info ).unwrap();
         let price_threshold = ctx.accounts.market_requirements.price_update_threshold;
         let current_price = price_feed

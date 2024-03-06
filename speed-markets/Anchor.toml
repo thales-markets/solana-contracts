@@ -8,7 +8,7 @@ skip-lint = false
 speed_markets = "FnBCKHhKz9KtpqWkWRvfQrWrr8Hs4kbtYE7aTp75F4vj"
 
 [programs.devnet]
-speed_markets = "EfscCNT9ERcPjNatjatcJRsuWLjqo5jSngbbS4Yim1i"
+speed_markets = "DSVREgjdfRaPTJ37MYBKyvZ3T1jzjjYZKDyTymvVacne"
 
 [registry]
 url = "https://api.apr.dev"
