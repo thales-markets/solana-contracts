@@ -33,13 +33,13 @@ OR go to Wallet (top right corner -> left (...) menu -> airdrop)
 ## Speed Markets
 
 Main logic in:  
-`program/speed-markets/lib.rs`
+`speed-markets/program/speed-markets/src/lib.rs`
 
 Main tests in:  
-`tests/speed-markets_devnet.js`
+`speed-markets/tests/speed-markets_devnet.js`
 
 Playbook test:  
-`tests/playbook_test.ts`
+`speed-markets/tests/playbook_test.ts`
 
 ### Branches
 
