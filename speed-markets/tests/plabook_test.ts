@@ -10,14 +10,17 @@ import {
 } from "@solana/spl-token";
 
 describe("Test", () => {
-  const mintAuthority = new web3.Keypair();
-  const freezeAuthority = new web3.Keypair();
   // const user_account = Keypair.generate();
   const user_account = pg.wallet.keypair;
   let tokenAccount;
   let mintInfo;
+  let mint_publicKey = new web3.PublicKey("6EssBiQqFPa1R8HncPZvTW2DiuyL9re8ffbVg7Bno2Ln");
+
   let mint;
-  it("initialize", async () => {
+
+  it("create token mint", async () => {
+    const mintAuthority = new web3.Keypair();
+    const freezeAuthority = new web3.Keypair();
     mint = await createMint(
       pg.connection,
       user_account,
@@ -25,11 +28,14 @@ describe("Test", () => {
       freezeAuthority.publicKey,
       9 // We are using 9 to match the CLI decimal default exactly
     );
-    console.log(mint);
+    // console.log(mint);
     console.log("new token address: ", mint.toBase58());
-    mintInfo = await getMint(pg.connection, mint);
+    console.log("mint address: ", mint.toBase58());
+    let mint_publicKey = new web3.PublicKey(mint.toBase58());
+    mintInfo = await getMint(pg.connection, mint_publicKey);
     console.log("token supply: ", mintInfo.supply);
-
+       console.log("mint authority: ", mintAuthority.publicKey.toString());
+       console.log("freezeAuthority: ", freezeAuthority.publicKey.toString());
     tokenAccount = await getOrCreateAssociatedTokenAccount(
       pg.connection,
       user_account,
@@ -40,13 +46,6 @@ describe("Test", () => {
       pg.connection,
       tokenAccount.address
     );
-    tokenAccount = await getOrCreateAssociatedTokenAccount(
-      pg.connection,
-      user_account,
-      mint,
-      user_account.publicKey
-    );
-    tokenAccountInfo = await getAccount(pg.connection, tokenAccount.address);
     console.log("Token amount before mint: ", tokenAccountInfo.amount);
     console.log("new token account: ", tokenAccount.address.toBase58());
     await mintTo(
@@ -55,26 +54,33 @@ describe("Test", () => {
       mint,
       tokenAccount.address,
       mintAuthority,
-      100000000000 // because decimals for the mint are set to 9
+      10000000000000 // because decimals for the mint are set to 9
     );
 
     mintInfo = await getMint(pg.connection, mint);
     console.log("mint amount: ", mintInfo.supply);
     tokenAccountInfo = await getAccount(pg.connection, tokenAccount.address);
+    console.log("User token account address: ", tokenAccount.address);
+  });
 
-    console.log(
-      "amount before creaation: ",
-      tokenAccountInfo.amount.toString()
+  it("initialize", async () => {
+      // mint = await getMint(pg.connection, mint_publicKey);
+    tokenAccount = await getOrCreateAssociatedTokenAccount(
+      pg.connection,
+      user_account,
+      mint,
+      user_account.publicKey
     );
-    let userTokenAmountBeforeCreation = tokenAccountInfo.amount;
-
-    const priceFeed = anchor.web3.Keypair.generate();
+    let tokenAccountInfo = await getAccount(
+      pg.connection,
+      tokenAccount.address
+    );
     //   const btcFeed = new PublicKey(
     //     "HovQMDrbAgAYPCmHVSrezcSmkMtXSSUsLDFANExrZh2J"
     //   );
     const btcFeed = new web3.PublicKey(
-      // "HovQMDrbAgAYPCmHVSrezcSmkMtXSSUsLDFANExrZh2J"
-      "EdVCmQ9FSPcVe5YySXDPCRmc8aDQLKJ9xvYBMZPie1Vw"
+      "HovQMDrbAgAYPCmHVSrezcSmkMtXSSUsLDFANExrZh2J"
+      // "EdVCmQ9FSPcVe5YySXDPCRmc8aDQLKJ9xvYBMZPie1Vw"
     );
     console.log("PROVIDER ACCOUNT: ", pg.wallet);
     console.log("provider acc: ", pg.wallet.publicKey.toString());
@@ -85,7 +91,7 @@ describe("Test", () => {
     const strikePrice = new anchor.BN(3700); // ethereum
     console.log("MarketStrike time: ", marketStrikeTime.toString());
     const directionUp = new anchor.BN(0);
-    const buyInAmount = new anchor.BN(100,"le");
+    const buyInAmount = new anchor.BN(100, "le");
     const [speedMarketPDA] = web3.PublicKey.findProgramAddressSync(
       [
         anchor.utils.bytes.utf8.encode("speedmarket"),
@@ -140,7 +146,7 @@ describe("Test", () => {
         new anchor.BN(maxBuyInAmount),
         new anchor.BN(safeBoxImpact),
         new anchor.BN(lpFee),
-        new anchor.BN(priceThreshold),
+        new anchor.BN(priceThreshold)
       )
       .accounts({
         marketRequirements: marketRequirementsPDA,
@@ -208,7 +214,12 @@ describe("Test", () => {
     console.log("rent: ", anchor.web3.SYSVAR_RENT_PUBKEY.toString());
     const directionUP = new anchor.BN(0);
     const create_tx = await pg.program.methods
-      .createSpeedMarket(marketStrikeTime, directionUP, buyInAmount, strikePrice)
+      .createSpeedMarket(
+        marketStrikeTime,
+        directionUP,
+        buyInAmount,
+        strikePrice
+      )
       .accounts({
         marketRequirements: marketRequirementsPDA,
         user: pg.wallet.publicKey,
@@ -222,7 +233,6 @@ describe("Test", () => {
       })
       .signers([pg.wallet.keypair])
       .rpc();
-    
 
     console.log(`Use 'solana confirm -v ${create_tx}' to see the logs`);
     // Confirm transaction
@@ -279,4 +289,3 @@ describe("Test", () => {
     // assert(data.eq(newAccount.data));
   });
 });
-

@@ -157,6 +157,8 @@ describe("speed-markets", () => {
       const minBuyInAmount = 10;
       const maxBuyInAmount = 100;
       const safeBoxImpact = 1;
+      const lpFee = 2;
+      const priceThreshold = 30;
 
       const [liquidityWalletPDA, requirementsBump] =
       await PublicKey.findProgramAddressSync(
@@ -190,6 +192,8 @@ describe("speed-markets", () => {
         new anchor.BN(minBuyInAmount), 
         new anchor.BN(maxBuyInAmount), 
         new anchor.BN(safeBoxImpact),
+        new anchor.BN(lpFee),
+        new anchor.BN(priceThreshold),
         {
         accounts:{
           // marketRequirements: marketRequirementsAccount.publicKey,
@@ -237,38 +241,55 @@ describe("speed-markets", () => {
       console.log("walletToWithdrawFrom: ", tokenAccount.address.toString());
       console.log("walletToWithdrawFrom owner: ", tokenAccount.owner.toString());
       console.log("btcFeed: ", btcFeed.toString());
+      console.log("program.programId: ", program.programId.toString());
       console.log("systemProgram: ", SystemProgram.programId.toString());
       console.log("tokenProgram: ", TOKEN_PROGRAM_ID.toString());
       console.log("rent: ", anchor.web3.SYSVAR_RENT_PUBKEY.toString());
-      let create_tx;
-      try {
-        create_tx = await program.rpc.createSpeedMarket(
-          marketStrikeTime, 
-          directionUp, 
-          buyInAmount,
-          strikePrice,
-          {
-          accounts:{
-            marketRequirements: marketRequirementsPDA,
-            // user: user_account.publicKey,
-            user: provider.wallet.publicKey,
-            speedMarket: speedMarketPDA,
-            speedMarketWallet: speedMarketWalletPDA,
-            tokenMint: mint,
-            walletToWithdrawFrom: tokenAccount.address,
-            priceFeed: btcFeed,
-            systemProgram: SystemProgram.programId,
-            tokenProgram: TOKEN_PROGRAM_ID,
-          },
-          signers: [provider.wallet.payer],
-        });
-        console.log("create tx: ", create_tx);
-        
-        
-      }
-      catch(err) {
-        throw err;
-      }
+      const directionUP = new anchor.BN(0);
+      const create_tx = await program.methods
+      .createSpeedMarket(marketStrikeTime, directionUP, buyInAmount, strikePrice)
+      .accounts({
+        marketRequirements: marketRequirementsPDA,
+        user: provider.wallet.publicKey,
+        speedMarket: speedMarketPDA,
+        speedMarketWallet: speedMarketWalletPDA,
+        tokenMint: mint,
+        walletToWithdrawFrom: tokenAccount.address,
+        priceFeed: btcFeed,
+        systemProgram: SystemProgram.programId,
+        tokenProgram: TOKEN_PROGRAM_ID,
+      })
+      .signers([provider.wallet.payer])
+      .rpc({
+        skipPreflight: true,
+    });
+
+    console.log(`Use 'solana confirm -v ${create_tx}' to see the logs`);
+    // Confirm transaction
+    await provider.connection.confirmTransaction(create_tx);
+
+    //   let create_tx = await program.rpc.createSpeedMarket(
+    //       marketStrikeTime, 
+    //       directionUp, 
+    //       buyInAmount,
+    //       strikePrice,
+    //       {
+    //       accounts:{
+    //         marketRequirements: marketRequirementsPDA,
+    //         // user: user_account.publicKey,
+    //         user: provider.wallet.publicKey,
+    //         speedMarket: speedMarketPDA,
+    //         speedMarketWallet: speedMarketWalletPDA,
+    //         tokenMint: mint,
+    //         walletToWithdrawFrom: tokenAccount.address,
+    //         priceFeed: btcFeed,
+    //         systemProgram: SystemProgram.programId,
+    //         tokenProgram: TOKEN_PROGRAM_ID,
+    //       },
+    //       signers: [provider.wallet.payer],
+    //     });
+    // console.log(`Use 'solana confirm -v ${create_tx}' to see the logs`);
+    // console.log("create tx: ", create_tx);
 
       await delay(10000);
 

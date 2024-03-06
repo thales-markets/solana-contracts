@@ -38,6 +38,7 @@ mod speed_markets {
         market_requirements.price_update_threshold = price_update_threshold;
         market_requirements.liquidity_wallet = ctx.accounts.liquidity_wallet.key();
         market_requirements.liquid_bump = ctx.bumps.market_requirements;
+        market_requirements.token_mint = ctx.accounts.token_mint.key();
         Ok(())
     }
 
@@ -271,7 +272,7 @@ pub struct CreateSpeedMarket<'info> {
             payer = user,
             space = 8 + SpeedMarket::LEN
         )]
-    pub speed_market: Account<'info, SpeedMarket>,
+    pub speed_market: Box<Account<'info, SpeedMarket>>,
     #[account(
         init,
         payer = user,
@@ -288,6 +289,10 @@ pub struct CreateSpeedMarket<'info> {
     pub speed_market_wallet: Account<'info, TokenAccount>,
     #[account(mut)]
     pub user: Signer<'info>,
+    #[account(
+        mut,
+        constraint=market_requirements.token_mint == token_mint.key(),
+    )]
     pub token_mint: Account<'info, Mint>,
     #[account(
         mut,
@@ -360,6 +365,7 @@ pub struct SpeedMarketRequirements {
     pub price_update_threshold: u64,
     pub liquidity_wallet: Pubkey,
     pub liquid_bump: u8,
+    pub token_mint: Pubkey,
 }
 
 #[account]
@@ -385,5 +391,5 @@ impl SpeedMarket {
     const LEN: usize = 1 + (4 * 32) + (4 * 8) + 1 + 1 + 8 + 1 + (3 * 8);
 }
 impl SpeedMarketRequirements {
-    const LEN: usize = 32 + (7 * 8) + 1;
+    const LEN: usize = 32 + (7 * 8) + 1 + 32;
 }
