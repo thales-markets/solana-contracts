@@ -59,6 +59,8 @@ Playbook test:
 **playbook_working_code** - branch with most advanced logic, lacks proper testing
 
 
+## Development notes
+
 ### Adding dependencies to programs
 
 - In the programs/<program_id>/, run: `cargo add mpl-token-metadata` to add the mpl-token-metadata package as dependency
