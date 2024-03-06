@@ -43,11 +43,15 @@ OR go to Wallet (top right corner -> left (...) menu -> airdrop)
 
 ## Speed Markets
 
-Installing new environment
+Main logic in:  
+`program/speed-markets/lib.rs`
 
-change to be added
+Main tests in:  
+`tests/speed-markets_devnet.js`
 
-Added the test environment
+Playbook test:  
+`tests/playbook_test.ts`
+
 
 ### Adding dependencies to programs
 
