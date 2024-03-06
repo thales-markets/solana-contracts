@@ -52,6 +52,12 @@ Main tests in:
 Playbook test:  
 `tests/playbook_test.ts`
 
+### Branches
+
+**main** - branch currently suitable for testing successful flow init -> create -> resolve
+
+**playbook_working_code** - branch with most advanced logic, lacks proper testing
+
 
 ### Adding dependencies to programs
 
