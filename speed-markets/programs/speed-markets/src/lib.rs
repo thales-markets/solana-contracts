@@ -67,8 +67,8 @@ mod speed_markets {
             Errors::InvalidPriceFeed
         );
 
-        let price_account_info = &ctx.accounts.price_feed.to_account_info();
-        let price_feed = load_price_feed_from_account_info( &price_account_info ).unwrap();
+        // let price_account_info = &ctx.accounts.price_feed.to_account_info();
+        let price_feed = load_price_feed_from_account_info( &ctx.accounts.price_feed.to_account_info() ).unwrap();
         let price_threshold = ctx.accounts.market_requirements.price_update_threshold;
         let current_price = price_feed
             .get_price_no_older_than(current_timestamp, price_threshold)
